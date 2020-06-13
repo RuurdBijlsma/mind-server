@@ -1,11 +1,12 @@
 from timer import Timer
-from actrmodel import ACTRModel
+from cogmodel import CognitiveModel
+from chunkCog import Chunk
 
 
 # None of this is final, the actual cognitive model needs to also be updated in all these functions
 
 
-class Model(ACTRModel):
+class Model(CognitiveModel):
     def __init__(self, sio):
     	super.__init__(self)
         self.shurikens_left = -1

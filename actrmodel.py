@@ -22,6 +22,7 @@ class ACTRModel(object):
     def __init__(self):
         self.time = 0
         self.goal = None
+        self.imaginal = None
         self.dm = []
 
 
