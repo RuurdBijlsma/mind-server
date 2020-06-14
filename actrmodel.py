@@ -7,6 +7,7 @@ class ACTRModel(object):
     # Model parameters
 
     ga = 1.0 # spreading activation from the goal (:ga; default: 1.0)
+    ia = 1.0 # spreading activation from the imaginal buffer (:imaginal-activation, default: 1.0)
     mas = 2.0 # maxmimum spreading (:mas; default: 2.0)
 
     d = 0.5 # decay (:bll; default: 0.5)
@@ -87,7 +88,7 @@ class ACTRModel(object):
 
         baselevel_activation = math.log(sum([(self.time - encounter) ** -self.d for encounter in chunk.encounters if encounter < self.time]))
 
-        spreading_activation = self.get_spreading_activation_from_goal(chunk)
+        spreading_activation = self.get_spreading_activation_from_goal(chunk) + self.get_spreading_activation_from_imaginal(chunk)
 
         return baselevel_activation + spreading_activation
     
@@ -136,6 +137,29 @@ class ACTRModel(object):
             return 0
 
         return spreading * (self.ga / total_slots)
+
+
+    def get_spreading_activation_from_imaginal(self, chunk):
+        """
+        Calculate the amount of spreading activation from the imaginal buffer to the specified chunk.
+        """
+
+        if self.imaginal is None:
+            return 0
+
+        if type(self.imaginal) is Chunk:
+            spreading = 0.0
+            total_slots = 0
+            for value in self.imaginal.slots.values():
+                total_slots += 1
+                ch1 = self.get_chunk(value)
+                if ch1 != None and value in chunk.slots.values() and ch1.fan > 0:
+                    spreading += max(0, self.mas - math.log(ch1.fan))
+        
+        if total_slots == 0:
+            return 0
+
+        return spreading * (self.ia / total_slots)
 
 
     def match(self, chunk1, pattern):
