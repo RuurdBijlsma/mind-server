@@ -31,7 +31,7 @@ class Model(CognitiveModel):
         self.temp_play_card_smart()
 
     def temp_play_card_smart(self):
-        print("temp_play_card_smart")
+        print("temp_play11_card_smart")
         # TEMPORARY (This just waits n seconds where n is the gap before playing lowest card)
         if self.timer is not None:
             self.timer.cancel()
