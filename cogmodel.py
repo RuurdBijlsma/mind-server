@@ -35,3 +35,22 @@ class CognitiveModel(ACTRModel):
 			wait_fact = Chunk(name = chunk_name, slots = {"type": "wait-fact",
 				"gap": gap, "wait": time})
 			self.add_encounter(wait_fact)
+
+	def _add_goal(self):
+		goal_0 = Chunk(name = "goal", slots = {"type": "game-state", "hand": None, "pile": None,
+			"gap": None, "wait": None, "succes": None})
+		self.goal = goal_0
+		# setting a goal takes 50 ms
+		self.time += 0.05
+
+	def reset_goal(self):
+		# If goal has already been created, reset its slots
+		if self.goal != None:
+			goal.slots["hand"] = None
+			goal.slots["pile"] = None
+			goal.slots["gap"] = None
+			goal.slots["wait"] = None
+			goal.slots["succes"] = None
+		else:
+			# if goal chunk does not yet exist, create it
+			self._add_goal()

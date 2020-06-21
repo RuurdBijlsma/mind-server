@@ -8,7 +8,7 @@ from chunkCog import Chunk
 
 class Model(CognitiveModel):
     def __init__(self, sio):
-    	super.__init__(self)
+    	super.__init__()
         self.shurikens_left = -1
         self.lives_left = -1
         self.hand = []
@@ -93,6 +93,9 @@ class Model(CognitiveModel):
     def new_game(self):
         print("new_game")
         self.reset_game()
+        game_state_0 = Chunk(name = "stats", slots:{"type": "game-state",
+        	"lives": self.lives_left, "shuriken" : self.shurikens_left})
+        self.add_encounter(game_state_0)
 
     def new_round(self, new_hand):
         print("new_round")
@@ -115,3 +118,4 @@ class Model(CognitiveModel):
         self.deck_top_card = 0
         self.player_hand_size = 0
         self.hand = []
+        self.reset_goal()
