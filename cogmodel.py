@@ -46,11 +46,11 @@ class CognitiveModel(ACTRModel):
 	def reset_goal(self):
 		# If goal has already been created, reset its slots
 		if self.goal != None:
-			goal.slots["hand"] = None
-			goal.slots["pile"] = None
-			goal.slots["gap"] = None
-			goal.slots["wait"] = None
-			goal.slots["succes"] = None
+			self.goal.slots["hand"] = None
+			self.goal.slots["pile"] = None
+			self.goal.slots["gap"] = None
+			self.goal.slots["wait"] = None
+			self.goal.slots["succes"] = None
 		else:
 			# if goal chunk does not yet exist, create it
 			self._add_goal()
