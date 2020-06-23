@@ -8,7 +8,7 @@ import temporal
 
 
 class Model(CognitiveModel):
-	def __init__(self, sio):
+	def __init__(self, sio = None):
 		super().__init__()
 		self.shurikens_left = -1
 		self.lives_left = -1
@@ -16,20 +16,8 @@ class Model(CognitiveModel):
 		self.player_hand_size = -1
 		self.deck_top_card = -1
 		self.reset_game()
-		self.sio = sio
-
-		# Temp
-		self.timer = None
-
-	# init for testing without the server
-	def __init__(self):
-		super().__init__()
-		self.shurikens_left = -1
-		self.lives_left = -1
-		self.hand = []
-		self.player_hand_size = -1
-		self.deck_top_card = -1
-		self.reset_game()
+		if sio is not None:
+			self.sio = sio
 
 		# Temp
 		self.timer = None
@@ -70,17 +58,21 @@ class Model(CognitiveModel):
 			if hand != None and gap == None:
 				pass
 				# determine gap, function does not yet exist so commented out for now
-				# self.determine_gap(hand, pile) 
+				# gap = self.determine_gap(hand, pile)
+				# self.goal.slots["gap"] = gap
+				# self.deliberate() 
+
 			# Model knows the gap but does not know how long to wait
-			elif gap != None and wait == None:
+			if gap != None and wait == None:
 				pass
-				# self.get_wait_fact(gap)
+				# pulses = self.get_wait_time(gap)
+				# self.goal.slots["wait"] = pulses
+				# self.deliberate()
+
 			# Model knows how long to wait and hasn't started waiting yet
-			elif wait != None and self.timer == None:
-				wait_seconds = temporal.pulses_to_time(wait)
-				self.timer = Timer(wait_seconds, self.play_lowest_card)
-			else:
-				pass
+			if wait != None and self.timer == None:
+				seconds = temporal.pulses_to_time(wait)
+				self.timer = Timer(seconds, self.play_lowest_card)
 		else:
 			print("Model has lost track of the game state...")
 
