@@ -1,6 +1,7 @@
 from timer import Timer
 from cogmodel import CognitiveModel
 from chunkCog import Chunk
+import temporal
 
 
 # None of this is final, the actual cognitive model needs to also be updated in all these functions
@@ -40,8 +41,48 @@ class Model(CognitiveModel):
 	def update_top_card(self, new_top_card):
 		print("update_top_card", new_top_card)
 		self.deck_top_card = new_top_card
+		# model "sees" change in game-state
+		self.set_pile(new_top_card)
 		# Played played a card, wait for some seconds to maybe play model card?
 		self.temp_play_card_smart()
+		# self.deliberate()
+
+	def deliberate(self):
+		# Cancel current action because game-state changed
+		if self.timer is not None:
+			self.timer.cancel()
+			self.timer == None
+
+		if len(self.hand) == 0:
+			print("our hand is empty, no actions left to do")
+			return
+
+		# determine what step model should take next
+		if self.goal != None:
+			# copy variables for easier use
+			hand = self.goal.slots["hand"]
+			pile = self.goal.slots["pile"]
+			gap = self.goal.slots["gap"]
+			wait = self.goal.slots["wait"]
+			success = self.goal.slots["success"]
+
+			# Model knows its hand and the deck top card, but does not yet know the gap
+			if hand != None and gap == None:
+				pass
+				# determine gap, function does not yet exist so commented out for now
+				# self.determine_gap(hand, pile) 
+			# Model knows the gap but does not know how long to wait
+			elif gap != None and wait == None:
+				pass
+				# self.get_wait_fact(gap)
+			# Model knows how long to wait and hasn't started waiting yet
+			elif wait != None and self.timer == None:
+				wait_seconds = temporal.pulses_to_time(wait)
+				self.timer = Timer(wait_seconds, self.play_lowest_card)
+			else:
+				pass
+		else:
+			print("Model has lost track of the game state...")
 
 	def temp_play_card_smart(self):
 		print("temp_play11_card_smart")
@@ -100,8 +141,11 @@ class Model(CognitiveModel):
 	def update_model_hand(self, new_hand):
 		print("update_model_hand", new_hand)
 		self.hand = new_hand
+		# model "sees" change in game-state
+		self.set_hand(self.get_lowest_card())
 		# Lowest card probably changed, to rethink our decisions
 		self.temp_play_card_smart()
+		# self.deliberate()
 
 	def new_game(self):
 		print("new_game")

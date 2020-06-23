@@ -1,20 +1,26 @@
 from model import Model
 from cogmodel import CognitiveModel
 
-# Tests whether adjusting the goal slot works effectively. It does.
-def testcase_goal():
-	m  = Model()
-	m.new_game()
+m = Model()
+m.new_game()
 
-	# print(m)
-
-	if m.goal.slots["pile"] == None:
-		print("This works!")
-		m1.goal.slots["pile"] = 2
+# Test whether model can process new hands
+def testcase_newround():
+	# m = Model()
+	# m.new_game()
 
 	print(m.goal)
-	
-	if m.goal.slots["pile"] != None:
-		print("This works too!")
 
-testcase_goal()
+	test_hand = [1, 2, 3]
+	m.new_round(test_hand)
+
+	print(m.goal)
+
+# Test whether model can process new top card
+def testcase_cardplayed():
+	m.update_top_card(4)
+	print(m.goal)
+
+# testcase_goal()
+testcase_newround()
+testcase_cardplayed()

@@ -22,7 +22,7 @@ class CognitiveModel(ACTRModel):
 			for n2 in range(0, 10):
 				chunk_name = "gf-" + str(n1) + str(n2)
 				gap_fact = Chunk(name = chunk_name, slots = {"type": "gap-fact",
-					"num1":n1, "num2": n2, "gap":abs(n1-n2)})
+					"num1":n1, "num2": n2, "gap":(n1-n2)})
 				self.add_encounter(gap_fact)
 
 	# Generate chunks forthe wait facts and add them to memory
@@ -37,8 +37,8 @@ class CognitiveModel(ACTRModel):
 			self.add_encounter(wait_fact)
 
 	def _add_goal(self):
-		goal_0 = Chunk(name = "goal", slots = {"type": "game-state", "hand": None, "pile": None,
-			"gap": None, "wait": None, "succes": None})
+		goal_0 = Chunk(name = "goal", slots = {"type": "game-state", "hand": None, "pile": 0,
+			"gap": None, "wait": None, "success": None})
 		self.goal = goal_0
 		# setting a goal takes 50 ms
 		self.time += 0.05
@@ -47,10 +47,25 @@ class CognitiveModel(ACTRModel):
 		# If goal has already been created, reset its slots
 		if self.goal != None:
 			self.goal.slots["hand"] = None
-			self.goal.slots["pile"] = None
+			self.goal.slots["pile"] = 0
 			self.goal.slots["gap"] = None
 			self.goal.slots["wait"] = None
-			self.goal.slots["succes"] = None
+			self.goal.slots["success"] = None
 		else:
 			# if goal chunk does not yet exist, create it
 			self._add_goal()
+
+	def set_pile(self, top_card):
+		# goal should always exist, but check to avoid errors
+		if self.goal != None:
+			self.goal.slots["pile"] = top_card
+		else:
+			print("ERROR: Goal does not exist thus cannot be adjusted.")
+
+	def set_hand(self, lowest_card):
+		# goal should always exist, but check to avoid errors
+		if self.goal != None:
+			self.goal.slots["hand"] = lowest_card
+		else:
+			print("ERROR: Goal does not exist thus cannot be adjusted.")
+			
