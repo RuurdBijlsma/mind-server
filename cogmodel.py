@@ -69,9 +69,25 @@ class CognitiveModel(ACTRModel):
 		else:
 			print("ERROR: Goal does not exist thus cannot be adjusted.")
 
-	def get_wait_time(self):
-		pass
+	def get_wait_time(self, gap):
+		blend_pattern = Chunk(name = "blend-pattern", slots = {"type": "wait-fact", "gap": gap})
+		wait_time, latency = self.retrieve_blended_trace(blend_pattern, "wait")
+		# add time for retrieval request
+		self.time += 0.05
+		# if model has seen this gap before, return wait time
+		if wait_time is not None:
+			self.time += latency
+			return wait_time
+		# if model has not seen this gap before, return wait time of most similar gap
+		else:
+			partial_pattern = Chunk(name = "partial-pattern", slots = {"type": "wait-fact", "gap": gap})
+			# add time for second retrieval request
+			self.time += 0.05
+			wait_fact, latency = self.retrieve_partial(partial_pattern)
+			self.time += latency
+			return wait_fact.slots["wait"]
+		return None
 
-	def determine_gap(self):
+	def determine_gap(self, card1, card2):
 		pass
 			

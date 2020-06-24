@@ -11,7 +11,7 @@ class ACTRModel(object):
     mas = 2.0 # maxmimum spreading (:mas; default: 2.0)
 
     d = 0.5 # decay (:bll; default: 0.5)
-    s = 0.0 # scale of activation noise (:ans; default: 0)
+    s = 0.2 # scale of activation noise (:ans; default: 0)
 
     lf = 0.1 # latency factor (:lf; default: 0.1)
     le = 1.0 # latency exponent (:le; default: 1.0)

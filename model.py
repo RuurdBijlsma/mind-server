@@ -62,19 +62,26 @@ class Model(CognitiveModel):
             # print("calculating difference with my lowest card...")
             # gap = self.determine_gap(hand, pile)
             # self.goal.slots["gap"] = gap
+            # add time for production to fire
+            # self.time += 0.05
             # self.deliberate()
 
             # Model knows the gap but does not know how long to wait
             if gap is not None and wait is None:
-                pass
-            # print("deciding how long to wait...")
-            # pulses = self.get_wait_time(gap)
-            # self.goal.slots["wait"] = pulses
-            # self.deliberate()
+                print("deciding how long to wait...")
+                pulses = self.get_wait_time(gap)
+                self.goal.slots["wait"] = pulses
+                # add time for production to fire
+                self.time += 0.05
+                self.deliberate()
 
             # Model knows how long to wait and hasn't started waiting yet
             if wait is not None and self.timer is None:
                 seconds = temporal.pulses_to_time(wait)
+                lowest_card = self.get_lowest_card()
+                print(f"Waiting {seconds} seconds before playing {lowest_card}")
+                # add time for production to fire
+                self.time += 0.05
                 self.timer = Timer(seconds, self.play_lowest_card)
         else:
             print("Model has lost track of the game state...")
