@@ -59,6 +59,7 @@ class Model(CognitiveModel):
             if hand is not None and gap is None:
                 pass
             # determine gap, function does not yet exist so commented out for now
+            # print("calculating difference with my lowest card...")
             # gap = self.determine_gap(hand, pile)
             # self.goal.slots["gap"] = gap
             # self.deliberate()
@@ -66,6 +67,7 @@ class Model(CognitiveModel):
             # Model knows the gap but does not know how long to wait
             if gap is not None and wait is None:
                 pass
+            # print("deciding how long to wait...")
             # pulses = self.get_wait_time(gap)
             # self.goal.slots["wait"] = pulses
             # self.deliberate()
@@ -107,6 +109,7 @@ class Model(CognitiveModel):
         print("play_card", card)
         self.hand.remove(card)
         await self.sio.emit('play_card', card)
+        m.time += timer.timeout
         self.update_top_card(card)
 
     # noinspection PyMethodMayBeStatic

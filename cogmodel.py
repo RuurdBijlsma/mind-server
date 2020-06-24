@@ -45,7 +45,7 @@ class CognitiveModel(ACTRModel):
 
 	def reset_goal(self):
 		# If goal has already been created, reset its slots
-		if self.goal != None:
+		if self.goal is not None:
 			self.goal.slots["hand"] = None
 			self.goal.slots["pile"] = 0
 			self.goal.slots["gap"] = None
@@ -57,15 +57,21 @@ class CognitiveModel(ACTRModel):
 
 	def set_pile(self, top_card):
 		# goal should always exist, but check to avoid errors
-		if self.goal != None:
+		if self.goal is not None:
 			self.goal.slots["pile"] = top_card
 		else:
 			print("ERROR: Goal does not exist thus cannot be adjusted.")
 
 	def set_hand(self, lowest_card):
 		# goal should always exist, but check to avoid errors
-		if self.goal != None:
+		if self.goal is not None:
 			self.goal.slots["hand"] = lowest_card
 		else:
 			print("ERROR: Goal does not exist thus cannot be adjusted.")
+
+	def get_wait_time(self):
+		pass
+
+	def determine_gap(self):
+		pass
 			
