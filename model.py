@@ -129,7 +129,7 @@ class Model(CognitiveModel):
         # model "sees" change in game-state
         self.set_hand(self.get_lowest_card())
         await self.sio.emit('play_card', card)
-        self.time += timer.timeout
+        # self.time += timer.timeout
         self.update_top_card(card)
 
     # noinspection PyMethodMayBeStatic
