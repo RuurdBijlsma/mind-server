@@ -18,7 +18,6 @@ class Model(CognitiveModel):
         self.reset_game()
         if sio is not None:
             self.sio = sio
-
         # Temp
         self.timer = None
 
@@ -32,9 +31,8 @@ class Model(CognitiveModel):
         # model "sees" change in game-state
         self.set_pile(new_top_card)
         # Played played a card, wait for some seconds to maybe play model card?
-        self.temp_play_card_smart()
-
-    # self.deliberate()
+        # self.temp_play_card_smart()
+        self.deliberate()
 
     def deliberate(self):
         # Cancel current action because game-state changed
@@ -46,6 +44,11 @@ class Model(CognitiveModel):
             print("our hand is empty, no actions left to do")
             return
 
+        # if self.get_player_hand_size() == 0:
+        #     while self.hand:
+        #         #self.play_lowest_card()
+        #         pass
+
         # determine what step model should take next
         if self.goal is not None:
             # copy variables for easier use
@@ -55,33 +58,41 @@ class Model(CognitiveModel):
             wait = self.goal.slots["wait"]
             success = self.goal.slots["success"]
 
+            # add time for production to fire
+            self.time += 0.05
+
+            if hand == 100 and self.get_player_hand_size() != 0:
+                return
+
+            if hand < pile:
+                self.life_lost()
+
             # Model knows its hand and the deck top card, but does not yet know the gap
             if hand is not None and gap is None:
-                pass
-            # determine gap, function does not yet exist so commented out for now
-            # print("calculating difference with my lowest card...")
-            # gap = self.determine_gap(hand, pile)
-            # self.goal.slots["gap"] = gap
-            # add time for production to fire
-            # self.time += 0.05
-            # self.deliberate()
+                print(f"calculating difference between {hand} and {pile}...")
+                new_gap = self.determine_gap(hand, pile)
+                self.goal.slots["gap"] = new_gap
+                # add time for modifying goal buffer
+                self.time += 0.05
+                self.reset_imaginal()
+                self.deliberate()
+                return
 
             # Model knows the gap but does not know how long to wait
             if gap is not None and wait is None:
-                print("deciding how long to wait...")
+                print(f"deciding how long to wait with a gap of {gap}")
                 pulses = self.get_wait_time(gap)
                 self.goal.slots["wait"] = pulses
-                # add time for production to fire
+                # add time for modifying goal buffer
                 self.time += 0.05
                 self.deliberate()
+                return
 
             # Model knows how long to wait and hasn't started waiting yet
             if wait is not None and self.timer is None:
                 seconds = temporal.pulses_to_time(wait)
                 lowest_card = self.get_lowest_card()
                 print(f"Waiting {seconds} seconds before playing {lowest_card}")
-                # add time for production to fire
-                self.time += 0.05
                 self.timer = Timer(seconds, self.play_lowest_card)
         else:
             print("Model has lost track of the game state...")
@@ -115,8 +126,10 @@ class Model(CognitiveModel):
     async def play_card(self, card):
         print("play_card", card)
         self.hand.remove(card)
+        # model "sees" change in game-state
+        self.set_hand(self.get_lowest_card())
         await self.sio.emit('play_card', card)
-        m.time += timer.timeout
+        self.time += timer.timeout
         self.update_top_card(card)
 
     # noinspection PyMethodMayBeStatic
@@ -147,9 +160,8 @@ class Model(CognitiveModel):
         # model "sees" change in game-state
         self.set_hand(self.get_lowest_card())
         # Lowest card probably changed, to rethink our decisions
-        self.temp_play_card_smart()
-
-    # self.deliberate()
+        # self.temp_play_card_smart()
+        self.deliberate()
 
     def new_game(self):
         print("new_game")

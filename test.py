@@ -32,7 +32,22 @@ def testcase_waitfacts():
 	seconds2 = temporal.pulses_to_time(pulses2)
 	print(f"We have to wait {pulses2} pulses, which is {seconds2} s.")
 
+def testcase_calcgap():
+	# an expected gap of hand > pile
+	gap1 = m.determine_gap(14, 10)
+	m.imaginal = None
+	# special case hand is 100
+	gap2 = m.determine_gap(100, 10)
+	m.imaginal = None
+	# anomoly case hand > pile
+	gap3 = m.determine_gap(10, 14)
+	print(gap1, gap2, gap3)
+
+def testcase_deliberate():
+	m.deliberate()
 
 testcase_newround()
-testcase_cardplayed()
-testcase_waitfacts()
+#testcase_cardplayed()
+#testcase_waitfacts()
+#testcase_calcgap()
+testcase_deliberate()
