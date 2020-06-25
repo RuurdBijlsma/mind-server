@@ -44,11 +44,6 @@ class Model(CognitiveModel):
             print("our hand is empty, no actions left to do")
             return
 
-        # if self.get_player_hand_size() == 0:
-        #     while self.hand:
-        #         #self.play_lowest_card()
-        #         pass
-
         # determine what step model should take next
         if self.goal is not None:
             # copy variables for easier use
@@ -60,6 +55,15 @@ class Model(CognitiveModel):
 
             # add time for production to fire
             self.time += 0.05
+
+            # Causes "coroutine was never awaited" warning 
+            # Triggers when you press new game, which breaks 
+            # if self.get_player_hand_size() == 0:
+            #     print("player's hand is empty")
+            #     if self.hand:
+            #         self.play_lowest_card()
+            #         return
+            #         #pass
 
             if hand == 100 and self.get_player_hand_size() != 0:
                 return
@@ -145,6 +149,13 @@ class Model(CognitiveModel):
     def life_lost(self):
         print("life_lost")
         self.lives_left -= 1
+        lives = self.lives_left
+        shuriken = self.shurikens_left
+        # add new game_state to memory
+        game_state_new = Chunk(name="stats" + str(lives) + str(shuriken), slots={"type": "game-state",
+                                                  "lives": lives, "shuriken": shuriken})
+        self.add_encounter(game_state_new)
+        self.time += 0.05
 
     def get_player_hand_size(self):
         print("get_player_hand_size")
@@ -166,9 +177,12 @@ class Model(CognitiveModel):
     def new_game(self):
         print("new_game")
         self.reset_game()
-        game_state_0 = Chunk(name="stats", slots={"type": "game-state",
-                                                  "lives": self.lives_left, "shuriken": self.shurikens_left})
+        lives = self.lives_left
+        shuriken = self.shurikens_left
+        game_state_0 = Chunk(name="stats" + str(lives) + str(shuriken), slots={"type": "game-state",
+                                                  "lives": lives, "shuriken": shuriken})
         self.add_encounter(game_state_0)
+        self.time += 0.05
 
     def new_round(self, new_hand):
         print("new_round")
