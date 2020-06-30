@@ -13,15 +13,14 @@ model = Model(sio)
 
 
 @sio.event
-def cards_played(sid, numbers):
-    print(f"Player played card(s) {numbers}")
-    model.update_player_hand_size(model.get_player_hand_size() - len(numbers))
+def cards_played(sid, number):
+    print(f"Player played card(s) {number}")
+    model.update_player_hand_size(model.get_player_hand_size() - 1)
     # player can play more than one card when shuriken is played for example, or when they have consecutive cards
     # In this card only regard the top card
     # Tell model here (only need to update top card if the new card is higher than the current top card)
-    last_number_played = numbers[len(numbers) - 1]
-    if last_number_played > model.get_top_card():
-        model.update_top_card(last_number_played)
+    if number > model.get_top_card():
+        model.update_top_card(number)
 
 
 @sio.event
@@ -44,9 +43,21 @@ def shuriken_vote(sid, vote, player_lowest_card):
 
 
 @sio.event
-def life_lost(sid):
-    print(f"Oh now we lost a life")
-    model.life_lost()
+def life_lost(sid, caused_by_human):
+    print(f"Oh no we lost a life, did human do it?" + str(caused_by_human))
+    model.life_lost(caused_by_human)
+
+
+@sio.event
+def get_life(sid, amount):
+    print("Bonus life!", amount)
+    model.add_life(amount)
+
+
+@sio.event
+def get_shuriken(sid, amount):
+    print("Bonus shuriken!", amount)
+    model.add_shuriken(amount)
 
 
 @sio.event

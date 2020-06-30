@@ -146,14 +146,26 @@ class Model(CognitiveModel):
         print("set_player_shuriken_response")
         pass
 
-    def life_lost(self):
+    def life_lost(self, caused_by_human):
+        # If it's caused by a human the model played a card too early
+        # Else it played a card too late
         print("life_lost")
         self.lives_left -= 1
+        self.update_state()
+
+    def add_life(self, amount):
+        self.lives_left += amount
+        self.update_state()
+
+    def add_shuriken(self, amount):
+        self.shurikens_left += amount
+        self.update_state()
+
+    def update_state(self):
         lives = self.lives_left
         shuriken = self.shurikens_left
-        # add new game_state to memory
-        game_state_new = Chunk(name="stats" + str(lives) + str(shuriken), slots={"type": "game-state",
-                                                  "lives": lives, "shuriken": shuriken})
+        game_state_new = Chunk(name="stats" + str(lives) + str(shuriken),
+                               slots={"type": "game-state", "lives": lives, "shuriken": shuriken})
         self.add_encounter(game_state_new)
         self.time += 0.05
 
@@ -177,12 +189,7 @@ class Model(CognitiveModel):
     def new_game(self):
         print("new_game")
         self.reset_game()
-        lives = self.lives_left
-        shuriken = self.shurikens_left
-        game_state_0 = Chunk(name="stats" + str(lives) + str(shuriken), slots={"type": "game-state",
-                                                  "lives": lives, "shuriken": shuriken})
-        self.add_encounter(game_state_0)
-        self.time += 0.05
+        self.update_state()
 
     def new_round(self, new_hand):
         print("new_round")
@@ -196,8 +203,8 @@ class Model(CognitiveModel):
 
     def reset_game(self):
         print("reset_game")
-        self.shurikens_left = 3
-        self.lives_left = 3
+        self.shurikens_left = 1
+        self.lives_left = 2
         self.reset_round()
 
     def reset_round(self):
