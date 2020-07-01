@@ -31,10 +31,14 @@ class CognitiveModel(ACTRModel):
 		data = pd.read_csv("timing_data.csv", usecols=['Gap','Pulses'])
 		array = data.to_numpy() # data is type numpy.int64 (compatible with int)
 		for gap, time in array:
-			chunk_name = "g" + str(gap) + "-w" + str(time)
-			wait_fact = Chunk(name = chunk_name, slots = {"type": "wait-fact",
-				"gap": gap, "wait": time})
-			self.add_encounter(wait_fact)
+			self.add_wait_fact(gap, time)
+
+	# Takes gap and time in pulse as arguments then creates a new wait fact in memory
+	def add_wait_fact(self, gap, time):
+		chunk_name = "g" + str(gap) + "-w" + str(time)
+		wait_fact = Chunk(name = chunk_name, slots = {"type": "wait-fact",
+			"gap": gap, "wait": time})
+		self.add_encounter(wait_fact)
 
 	def _add_goal(self):
 		goal_0 = Chunk(name = "goal", slots = {"type": "game-state", "hand": None, "pile": 0,

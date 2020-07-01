@@ -1,6 +1,8 @@
 from timer import Timer
+import time as tm
 from cogmodel import CognitiveModel
 from chunkCog import Chunk
+from success import Success
 import temporal
 
 
@@ -20,6 +22,7 @@ class Model(CognitiveModel):
             self.sio = sio
         # Temp
         self.timer = None
+        self.wait_time = None
 
     def get_top_card(self):
         print("get_top_card", self.deck_top_card)
@@ -56,20 +59,8 @@ class Model(CognitiveModel):
             # add time for production to fire
             self.time += 0.05
 
-            # Causes "coroutine was never awaited" warning 
-            # Triggers when you press new game, which breaks 
-            # if self.get_player_hand_size() == 0:
-            #     print("player's hand is empty")
-            #     if self.hand:
-            #         self.play_lowest_card()
-            #         return
-            #         #pass
-
             if hand == 100 and self.get_player_hand_size() != 0:
                 return
-
-            if hand < pile:
-                self.life_lost()
 
             # Model knows its hand and the deck top card, but does not yet know the gap
             if hand is not None and gap is None:
@@ -98,6 +89,8 @@ class Model(CognitiveModel):
                 lowest_card = self.get_lowest_card()
                 print(f"Waiting {seconds} seconds before playing {lowest_card}")
                 self.timer = Timer(seconds, self.play_lowest_card)
+                # set wait time as starting time
+                self.wait_time = tm.time()
         else:
             print("Model has lost track of the game state...")
 
@@ -150,8 +143,19 @@ class Model(CognitiveModel):
         # If it's caused by a human the model played a card too early
         # Else it played a card too late
         print("life_lost")
+        # wait time because current time minus old wait_time
+        self.wait_time = tm.time() - self.wait_time
         self.lives_left -= 1
         self.update_state()
+        if self.goal is not None:
+            if caused_by_human:
+                # model played a card too early
+                self.goal["success"] = Success.early
+            else:
+                # modedl played a card too late
+                self.goal["success"] = Success.late
+            self.time += 0.05
+        self.process_feedback()
 
     def add_life(self, amount):
         self.lives_left += amount
@@ -168,6 +172,21 @@ class Model(CognitiveModel):
                                slots={"type": "game-state", "lives": lives, "shuriken": shuriken})
         self.add_encounter(game_state_new)
         self.time += 0.05
+
+    # function to process whether a card play was successful or not
+    def process_feedback():
+        if self.goal is not None:
+            if self.goal["success"] is not None:
+                success = self.goal["success"]
+                # model played a card too early
+                if success == Success.early:
+                    pass
+                # model played a card too late
+                if success == Success.late:
+                    pass
+                # model played a card just right
+                if success == Success.success:
+                    pass
 
     def get_player_hand_size(self):
         print("get_player_hand_size")
