@@ -81,6 +81,10 @@ class CognitiveModel(ACTRModel):
 		# goal should always exist, but check to avoid errors
 		if self.goal is not None:
 			self.goal.slots["hand"] = lowest_card
+			# reset the other slots because hand has changed
+			self.goal.slots["gap"] = None
+			self.goal.slots["wait"] = None
+			self.goal.slots["success"] = None
 			# add time for modifying goal buffer
 			self.time += 0.05
 		else:

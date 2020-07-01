@@ -59,22 +59,6 @@ class Model(CognitiveModel):
             # add time for production to fire
             self.time += 0.05
 
-            # # if the model missed an update to its hand, set hand as current lowest card
-            # if hand is None:
-            #     self.set_hand(self.get_lowest_card())
-            #     self.deliberate()
-            #     return
-
-            # # if the model missed an update to the deck/pile, set pile as current deck top card
-            # if pile is None:
-            #     self.set_pile(self.deck_top_card)
-            #     self.deliberate()
-            #     return 
-
-            if hand < pile:
-                self.life_lost(False)
-                return
-
             if hand == 100 and self.get_player_hand_size() != 0:
                 return
 
@@ -100,13 +84,20 @@ class Model(CognitiveModel):
                 return
 
             # Model knows how long to wait and hasn't started waiting yet
-            if wait is not None and self.timer is None:
+            if wait is not None and success is None:
                 seconds = temporal.pulses_to_time(wait)
                 lowest_card = self.get_lowest_card()
                 print(f"Waiting {seconds} seconds before playing {lowest_card}")
                 self.timer = Timer(seconds, self.play_lowest_card)
                 # set wait time as starting time
                 self.wait_time = tm.time()
+                return
+
+            if success is not None:
+                print(f"Processing feedback from success {success}")
+                self.process_feedback()
+                self.reset_goal()
+                return
         else:
             print("Model has lost track of the game state...")
 
@@ -159,6 +150,9 @@ class Model(CognitiveModel):
         # If it's caused by a human the model played a card too early
         # Else it played a card too late
         print("life_lost")
+        if self.timer is not None:
+            self.timer.cancel()
+            self.timer = None
         # wait time becomes current time minus old wait_time
         self.wait_time = tm.time() - self.wait_time
         self.lives_left -= 1
@@ -166,12 +160,12 @@ class Model(CognitiveModel):
         if self.goal is not None:
             if caused_by_human:
                 # model played a card too early
-                self.goal["success"] = Success.early
+                self.goal.slots["success"] = Success.early
             else:
                 # modedl played a card too late
-                self.goal["success"] = Success.late
+                self.goal.slots["success"] = Success.late
             self.time += 0.05
-        self.process_feedback()
+        self.deliberate()
 
     def add_life(self, amount):
         self.lives_left += amount
@@ -190,12 +184,12 @@ class Model(CognitiveModel):
         self.time += 0.05
 
     # function to process whether a card play was successful or not
-    def process_feedback():
+    def process_feedback(self):
         if self.goal is not None:
-            if self.goal["success"] is not None:
-                success = self.goal["success"]
-                gap = self.goal["gap"]
-                time = self.goal["wait"]
+            if self.goal.slots["success"] is not None:
+                success = self.goal.slots["success"]
+                gap = self.goal.slots["gap"]
+                time = self.goal.slots["wait"]
                 # model played a card too early
                 if success == Success.early:
                     # set new time as 10% later than that the model played (and a life was lost)
@@ -212,11 +206,6 @@ class Model(CognitiveModel):
                 if success == Success.success:
                     # add new encounter of the successful wait fact
                     self.add_wait_fact(gap, time)
-                # processing of feedback is complete, reset goal
-                self.reset_goal()
-                self.time += 0.05
-                # # since there was a change in goal, deliberate again
-                # self.deliberate()
 
     def get_player_hand_size(self):
         print("get_player_hand_size")
