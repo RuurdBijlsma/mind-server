@@ -55,6 +55,7 @@ class CognitiveModel(ACTRModel):
 			self.goal.slots["gap"] = None
 			self.goal.slots["wait"] = None
 			self.goal.slots["success"] = None
+			self.time += 0.05
 		else:
 			# if goal chunk does not yet exist, create it
 			self._add_goal()

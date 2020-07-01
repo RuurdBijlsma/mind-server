@@ -59,6 +59,22 @@ class Model(CognitiveModel):
             # add time for production to fire
             self.time += 0.05
 
+            # # if the model missed an update to its hand, set hand as current lowest card
+            # if hand is None:
+            #     self.set_hand(self.get_lowest_card())
+            #     self.deliberate()
+            #     return
+
+            # # if the model missed an update to the deck/pile, set pile as current deck top card
+            # if pile is None:
+            #     self.set_pile(self.deck_top_card)
+            #     self.deliberate()
+            #     return 
+
+            if hand < pile:
+                self.life_lost(False)
+                return
+
             if hand == 100 and self.get_player_hand_size() != 0:
                 return
 
@@ -143,7 +159,7 @@ class Model(CognitiveModel):
         # If it's caused by a human the model played a card too early
         # Else it played a card too late
         print("life_lost")
-        # wait time because current time minus old wait_time
+        # wait time becomes current time minus old wait_time
         self.wait_time = tm.time() - self.wait_time
         self.lives_left -= 1
         self.update_state()
@@ -178,15 +194,29 @@ class Model(CognitiveModel):
         if self.goal is not None:
             if self.goal["success"] is not None:
                 success = self.goal["success"]
+                gap = self.goal["gap"]
+                time = self.goal["wait"]
                 # model played a card too early
                 if success == Success.early:
-                    pass
+                    # set new time as 10% later than that the model played (and a life was lost)
+                    new_time = self.wait_time + (self.wait_time * 0.1)
+                    new_time = temporal.time_to_pulses(new_time)
+                    self.add_wait_fact(gap, new_time)
                 # model played a card too late
                 if success == Success.late:
-                    pass
+                    # set new time as 10% earlier than that the player played (and a life was lost)
+                    new_time = self.wait_time - (self.wait_time * 0.1)
+                    new_time = temporal.time_to_pulses(new_time)
+                    self.add_wait_fact(gap, new_time)
                 # model played a card just right
                 if success == Success.success:
-                    pass
+                    # add new encounter of the successful wait fact
+                    self.add_wait_fact(gap, time)
+                # processing of feedback is complete, reset goal
+                self.reset_goal()
+                self.time += 0.05
+                # # since there was a change in goal, deliberate again
+                # self.deliberate()
 
     def get_player_hand_size(self):
         print("get_player_hand_size")
