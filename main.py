@@ -13,7 +13,7 @@ model = Model(sio)
 
 
 @sio.event
-def cards_played(sid, number):
+def card_played(sid, number):
     print(f"Player played card(s) {number}")
     model.update_player_hand_size(model.get_player_hand_size() - 1)
     # player can play more than one card when shuriken is played for example, or when they have consecutive cards
