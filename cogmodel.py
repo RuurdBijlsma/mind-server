@@ -1,5 +1,6 @@
 from actrmodel import ACTRModel
 from chunkCog import Chunk
+import temporal
 import pandas as pd
 import numpy as np
 
@@ -9,6 +10,7 @@ class CognitiveModel(ACTRModel):
 	def __init__(self):
 		super().__init__()
 		self.rt = -10.0	# high retrieval threshold because number knowledge is well-known and game state is readily available
+		# initialise memory 
 		self._init_memory()
 
 	# Initialise declarative memory with gap facts and pulse durations        
@@ -28,13 +30,37 @@ class CognitiveModel(ACTRModel):
 	# Generate chunks forthe wait facts and add them to memory
 	def _add_wait_facts(self):
 		# Get initial times to wait from timing_data csv
-		data = pd.read_csv("timing_data.csv", usecols=['Gap','Pulses'])
+		data = pd.read_csv('data/init_memory.csv', usecols=['Gap','Pulses'])
 		array = data.to_numpy() # data is type numpy.int64 (compatible with int)
 		for gap, time in array:
+			self.add_wait_fact(gap, time)
+
+	# Takes gap and time in pulse as arguments then creates a new wait fact in memory
+	def add_wait_fact(self, gap, time, in_csv = True):
+		if gap is not None and time is not None:
 			chunk_name = "g" + str(gap) + "-w" + str(time)
 			wait_fact = Chunk(name = chunk_name, slots = {"type": "wait-fact",
 				"gap": gap, "wait": time})
+			# fact is not in csv yet
+			if not in_csv:
+				# is fact new (i.e. not already in memory?)
+				if chunk_name not in [chunk.name for chunk in self.dm]:
+					# add new fact to csv
+					self._add_to_csv(gap, time)
+			# add new fact to memory (or add encounter to already existing memory)
 			self.add_encounter(wait_fact)
+
+
+	def _add_to_csv(self, gap, pulses):
+		seconds = temporal.pulses_to_time(pulses)
+		# intialise new row for csv
+		row = [gap, seconds, pulses]
+		# Create DataFrame of new row
+		df = pd.DataFrame(row).transpose()
+		df.columns = ['Gap', 'Time (s)', "Pulses"]
+		# add new df to csv
+		with open('data/learned_memory.csv', 'a') as f:
+			df.to_csv(f, mode='a', header=f.tell()==0, index = False)
 
 	def _add_goal(self):
 		goal_0 = Chunk(name = "goal", slots = {"type": "game-state", "hand": None, "pile": 0,
@@ -43,14 +69,16 @@ class CognitiveModel(ACTRModel):
 		# setting a goal takes 50 ms
 		self.time += 0.05
 
-	def reset_goal(self):
+	def reset_goal(self, partial = False):
 		# If goal has already been created, reset its slots
 		if self.goal is not None:
-			self.goal.slots["hand"] = None
-			self.goal.slots["pile"] = 0
+			if not partial:
+				self.goal.slots["hand"] = None
+				self.goal.slots["pile"] = 0
 			self.goal.slots["gap"] = None
 			self.goal.slots["wait"] = None
 			self.goal.slots["success"] = None
+			self.time += 0.05
 		else:
 			# if goal chunk does not yet exist, create it
 			self._add_goal()
@@ -64,11 +92,7 @@ class CognitiveModel(ACTRModel):
 		if self.goal is not None:
 			self.goal.slots["pile"] = top_card
 			# reset the other slots because pile has changed
-			self.goal.slots["gap"] = None
-			self.goal.slots["wait"] = None
-			self.goal.slots["success"] = None
-			# add time for modifying goal buffer
-			self.time += 0.05
+			# self.reset_goal(partial = True)
 		else:
 			print("ERROR: Goal does not exist thus cannot be adjusted.")
 
@@ -76,8 +100,8 @@ class CognitiveModel(ACTRModel):
 		# goal should always exist, but check to avoid errors
 		if self.goal is not None:
 			self.goal.slots["hand"] = lowest_card
-			# add time for modifying goal buffer
-			self.time += 0.05
+			# reset the other slots because hand has changed
+			# self.reset_goal(partial = True)
 		else:
 			print("ERROR: Goal does not exist thus cannot be adjusted.")
 
