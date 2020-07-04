@@ -12,7 +12,7 @@ def testcase_newround():
 
 	print(m.goal)
 
-	test_hand = [1, 2, 3]
+	test_hand = [13, 24, 30]
 	m.new_round(test_hand)
 
 	print(m.goal)
@@ -46,8 +46,17 @@ def testcase_calcgap():
 def testcase_deliberate():
 	m.deliberate()
 
+# Test the different success types
+def testcase_success():
+	m.update_top_card(14)
+	print(m.goal)
+	m.life_lost(False)
+	print(m.goal)
+
+
 testcase_newround()
 #testcase_cardplayed()
 #testcase_waitfacts()
 #testcase_calcgap()
-testcase_deliberate()
+#testcase_deliberate()
+testcase_success()

@@ -43,10 +43,6 @@ class Model(CognitiveModel):
             self.timer.cancel()
             self.timer = None
 
-        if len(self.hand) == 0:
-            print("our hand is empty, no actions left to do")
-            return
-
         # determine what step model should take next
         if self.goal is not None:
             # copy variables for easier use
@@ -59,6 +55,20 @@ class Model(CognitiveModel):
             # add time for production to fire
             self.time += 0.05
 
+            # process last play if it exists
+            # if success is not None:
+            #     print(f"Processing feedback from success {success}")
+            #     self.process_feedback()
+            #     self.reset_goal(partial = True)
+            #     # self.deliberate()
+            #     return
+
+            # hand is empty (and latest feedback has been processed)
+            if len(self.hand) == 0:
+                print("our hand is empty, no actions left to do")
+                return
+
+            # refrain from doing anything with a 100 card if player still has cards
             if hand == 100 and self.get_player_hand_size() != 0:
                 return
 
@@ -91,13 +101,7 @@ class Model(CognitiveModel):
                 self.timer = Timer(seconds, self.play_lowest_card)
                 # set wait time as starting time
                 self.wait_time = tm.time()
-                return
 
-            if success is not None:
-                print(f"Processing feedback from success {success}")
-                self.process_feedback()
-                self.reset_goal()
-                return
         else:
             print("Model has lost track of the game state...")
 
@@ -150,11 +154,9 @@ class Model(CognitiveModel):
         # If it's caused by a human the model played a card too early
         # Else it played a card too late
         print("life_lost")
-        if self.timer is not None:
-            self.timer.cancel()
-            self.timer = None
         # wait time becomes current time minus old wait_time
         self.wait_time = tm.time() - self.wait_time
+        print(f"I'd been waiting for {self.wait_time} seconds when I lost a life.")
         self.lives_left -= 1
         self.update_state()
         if self.goal is not None:
@@ -190,22 +192,26 @@ class Model(CognitiveModel):
                 success = self.goal.slots["success"]
                 gap = self.goal.slots["gap"]
                 time = self.goal.slots["wait"]
+                print(f"Proccessing feedback for waiting {time} pulses for gap {gap}...")
                 # model played a card too early
                 if success == Success.early:
                     # set new time as 10% later than that the model played (and a life was lost)
                     new_time = self.wait_time + (self.wait_time * 0.1)
                     new_time = temporal.time_to_pulses(new_time)
-                    self.add_wait_fact(gap, new_time)
+                    self.add_wait_fact(gap, new_time, in_csv = False)
+                    print(f"I should have waited longer; I will try waiting {new_time} for gap {gap}.")
                 # model played a card too late
                 if success == Success.late:
                     # set new time as 10% earlier than that the player played (and a life was lost)
                     new_time = self.wait_time - (self.wait_time * 0.1)
                     new_time = temporal.time_to_pulses(new_time)
-                    self.add_wait_fact(gap, new_time)
+                    self.add_wait_fact(gap, new_time, in_csv = False)
+                    print(f"I should have played sooner; I will try waiting {new_time} for gap {gap}.")
                 # model played a card just right
                 if success == Success.success:
                     # add new encounter of the successful wait fact
                     self.add_wait_fact(gap, time)
+                    print(f"Waiting {time} worked out; I will wait that long again next time I see gap {gap}.")
 
     def get_player_hand_size(self):
         print("get_player_hand_size")
