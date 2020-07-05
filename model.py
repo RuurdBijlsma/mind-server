@@ -30,7 +30,11 @@ class Model(CognitiveModel):
 
     def update_top_card(self, new_top_card):
         print("update_top_card", new_top_card)
-        self.deck_top_card = new_top_card
+        current_top_card = self.get_top_card()
+        if new_top_card > current_top_card:
+            self.deck_top_card = new_top_card
+        else:
+            print("New card is lower can previous top card, retaining previous top card, but still deliberating", current_top_card)
         # model "sees" change in game-state
         self.set_pile(new_top_card)
         # Played played a card, wait for some seconds to maybe play model card?
@@ -38,6 +42,7 @@ class Model(CognitiveModel):
         self.deliberate()
 
     def deliberate(self):
+        print("Start model deliberate")
         # Cancel current action because game-state changed
         if self.timer is not None:
             self.timer.cancel()
@@ -70,13 +75,14 @@ class Model(CognitiveModel):
 
             # refrain from doing anything with a 100 card if player still has cards
             if hand == 100 and self.get_player_hand_size() != 0:
+                print("Waiting indefinitely, model card = 100")
                 return
 
             # Model knows its hand and the deck top card, but does not yet know the gap
             if hand is not None and gap is None:
-                print(f"calculating difference between {hand} and {pile}...")
                 new_gap = self.determine_gap(hand, pile)
                 self.goal.slots["gap"] = new_gap
+                print(f"calculating difference between {hand} and {pile}...", "calculated gap is", new_gap)
                 # add time for modifying goal buffer
                 self.time += 0.05
                 self.reset_imaginal()
@@ -106,7 +112,7 @@ class Model(CognitiveModel):
             print("Model has lost track of the game state...")
 
     def temp_play_card_smart(self):
-        print("temp_play11_card_smart")
+        print("temp_play_card_smart")
         # TEMPORARY (This just waits n seconds where n is the gap before playing lowest card)
         if self.timer is not None:
             self.timer.cancel()
@@ -119,7 +125,6 @@ class Model(CognitiveModel):
         self.timer = Timer(gap, self.play_lowest_card)
 
     def get_lowest_card(self):
-        print("get_lowest_card")
         if len(self.hand) == 1:
             return self.hand[0]
         if len(self.hand) == 0:
@@ -127,7 +132,6 @@ class Model(CognitiveModel):
         return min(*self.hand)
 
     async def play_lowest_card(self):
-        print("play_lowest_card")
         lowest_card = self.get_lowest_card()
         await self.play_card(lowest_card)
 
@@ -170,14 +174,17 @@ class Model(CognitiveModel):
         self.deliberate()
 
     def add_life(self, amount):
+        print("add life")
         self.lives_left += amount
         self.update_state()
 
     def add_shuriken(self, amount):
+        print("add shuriken")
         self.shurikens_left += amount
         self.update_state()
 
     def update_state(self):
+        print('[Updating model state]')
         lives = self.lives_left
         shuriken = self.shurikens_left
         game_state_new = Chunk(name="stats" + str(lives) + str(shuriken),
@@ -198,14 +205,14 @@ class Model(CognitiveModel):
                     # set new time as 10% later than that the model played (and a life was lost)
                     new_time = self.wait_time + (self.wait_time * 0.1)
                     new_time = temporal.time_to_pulses(new_time)
-                    self.add_wait_fact(gap, new_time, in_csv = False)
+                    self.add_wait_fact(gap, new_time, in_csv=False)
                     print(f"I should have waited longer; I will try waiting {new_time} for gap {gap}.")
                 # model played a card too late
                 if success == Success.late:
                     # set new time as 10% earlier than that the player played (and a life was lost)
                     new_time = self.wait_time - (self.wait_time * 0.1)
                     new_time = temporal.time_to_pulses(new_time)
-                    self.add_wait_fact(gap, new_time, in_csv = False)
+                    self.add_wait_fact(gap, new_time, in_csv=False)
                     print(f"I should have played sooner; I will try waiting {new_time} for gap {gap}.")
                 # model played a card just right
                 if success == Success.success:
@@ -214,11 +221,11 @@ class Model(CognitiveModel):
                     print(f"Waiting {time} worked out; I will wait that long again next time I see gap {gap}.")
 
     def get_player_hand_size(self):
-        print("get_player_hand_size")
+        print("get_player_hand_size", self.player_hand_size)
         return self.player_hand_size
 
     def update_player_hand_size(self, new_hand_size):
-        print("update_player_hand_size")
+        print("update_player_hand_size", new_hand_size)
         self.player_hand_size = new_hand_size
 
     def update_model_hand(self, new_hand):
@@ -240,6 +247,7 @@ class Model(CognitiveModel):
         self.reset_timer()
         self.reset_round()
         self.update_model_hand(new_hand)
+        self.update_player_hand_size(len(new_hand))
 
     def reset_timer(self):
         print("reset_timer")

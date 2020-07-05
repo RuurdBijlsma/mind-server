@@ -19,8 +19,7 @@ def card_played(sid, number):
     # player can play more than one card when shuriken is played for example, or when they have consecutive cards
     # In this card only regard the top card
     # Tell model here (only need to update top card if the new card is higher than the current top card)
-    if number > model.get_top_card():
-        model.update_top_card(number)
+    model.update_top_card(number)
 
 
 @sio.event
@@ -80,7 +79,6 @@ def update_player_hand_size(sid, player_hand_size):
 def new_round(sid, new_hand):
     print(f"New round: {len(new_hand)} reset model time and update hand to {new_hand}")
     # Reset timer in new_round
-    model.update_player_hand_size(len(new_hand))
     model.new_round(new_hand)
 
 
