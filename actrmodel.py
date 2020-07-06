@@ -86,7 +86,7 @@ class ACTRModel(object):
         if self.time <= min(chunk.encounters):
             raise ValueError("Chunk %s not encountered at or before time %s" % (str(chunk.name), str(self.time)))
 
-        baselevel_activation = math.log(sum([(self.time - encounter) ** -self.d for encounter in chunk.encounters if encounter < self.time]))
+        baselevel_activation = math.log(sum([(self.time - encounter) ** -self.d for encounter in chunk.encounters if encounter < self.time])) + chunk.blc
 
         spreading_activation = self.get_spreading_activation_from_goal(chunk) + self.get_spreading_activation_from_imaginal(chunk)
 

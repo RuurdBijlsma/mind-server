@@ -130,7 +130,7 @@ class Model(CognitiveModel):
         if len(self.hand) == 1:
             return self.hand[0]
         if len(self.hand) == 0:
-            return False
+            return None
         return min(*self.hand)
 
     async def play_lowest_card(self):

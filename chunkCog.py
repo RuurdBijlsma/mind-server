@@ -1,10 +1,11 @@
 class Chunk(object):
 
-    def __init__(self, name, slots):
+    def __init__(self, name, slots, blc = 0):
         self.name = name
         self.slots = slots
         self.encounters = []
         self.fan = 0 # How many other chunks refer to this chunk?
+        self.blc = blc # the base-level activation constant
 
     
     def add_encounter(self, time):
