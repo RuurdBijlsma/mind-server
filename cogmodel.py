@@ -50,7 +50,6 @@ class CognitiveModel(ACTRModel):
 			# add new fact to memory (or add encounter to already existing memory)
 			self.add_encounter(wait_fact)
 
-
 	def _add_to_csv(self, gap, pulses):
 		seconds = temporal.pulses_to_time(pulses)
 		# intialise new row for csv
@@ -69,24 +68,6 @@ class CognitiveModel(ACTRModel):
 		# setting a goal takes 50 ms
 		self.time += 0.05
 
-	def reset_goal(self, partial = False):
-		# If goal has already been created, reset its slots
-		if self.goal is not None:
-			if not partial:
-				self.goal.slots["hand"] = None
-				self.goal.slots["pile"] = 0
-			self.goal.slots["gap"] = None
-			self.goal.slots["wait"] = None
-			self.goal.slots["success"] = None
-			self.time += 0.05
-		else:
-			# if goal chunk does not yet exist, create it
-			self._add_goal()
-
-	def reset_imaginal(self):
-		if self.imaginal is not None:
-			self.imaginal = None
-
 	def set_pile(self, top_card):
 		# goal should always exist, but check to avoid errors
 		if self.goal is not None:
@@ -104,6 +85,16 @@ class CognitiveModel(ACTRModel):
 			# self.reset_goal(partial = True)
 		else:
 			print("ERROR: Goal does not exist thus cannot be adjusted.")
+
+	# generates time for the model to perform a movement + randomness
+	# t can be generated with Fitt's Law by is set as 0.1 as mimimum-time, n = 3 by default
+	def get_movement_time(self, t = 0.1, n = 3):
+		low = t*((n-1)/n)
+		high = t*((n+1)/n)
+		mt = np.random.uniform(low,high)
+		mt += 0.15
+		self.time += mt
+		return mt
 
 	def get_wait_time(self, gap):
 		blend_pattern = Chunk(name = "blend-pattern", slots = {"type": "wait-fact", "gap": gap})
@@ -190,5 +181,21 @@ class CognitiveModel(ACTRModel):
 			return gap_tot
 
 		return None
-		
-			
+
+	def reset_goal(self, partial = False):
+		# If goal has already been created, reset its slots
+		if self.goal is not None:
+			if not partial:
+				self.goal.slots["hand"] = None
+				self.goal.slots["pile"] = 0
+			self.goal.slots["gap"] = None
+			self.goal.slots["wait"] = None
+			self.goal.slots["success"] = None
+			self.time += 0.05
+		else:
+			# if goal chunk does not yet exist, create it
+			self._add_goal()
+
+	def reset_imaginal(self):
+		if self.imaginal is not None:
+			self.imaginal = None

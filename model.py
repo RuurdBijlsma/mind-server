@@ -104,9 +104,11 @@ class Model(CognitiveModel):
                 seconds = temporal.pulses_to_time(wait)
                 lowest_card = self.get_lowest_card()
                 print(f"Waiting {seconds} seconds before playing {lowest_card}")
-                self.timer = Timer(seconds, self.play_lowest_card)
-                # set wait time as starting time
-                self.wait_time = tm.time()
+                # time it takes for the model to perform a movement
+                mt = self.get_movement_time()
+                self.timer = Timer((seconds + mt), self.play_lowest_card)
+                # set wait time as starting time (minus movement time)
+                self.wait_time = tm.time() - mt
 
         else:
             print("Model has lost track of the game state...")
