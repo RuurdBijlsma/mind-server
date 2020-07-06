@@ -3,6 +3,7 @@ import socketio
 import eventlet
 from aiohttp import web
 from model import Model
+from enums import Actor
 
 # create a Socket.IO server
 sio = socketio.AsyncServer(cors_allowed_origins='*', logger=False)
@@ -19,7 +20,7 @@ def card_played(sid, number):
     # player can play more than one card when shuriken is played for example, or when they have consecutive cards
     # In this card only regard the top card
     # Tell model here (only need to update top card if the new card is higher than the current top card)
-    model.update_top_card(number)
+    model.update_top_card(number, Actor.player)
 
 
 @sio.event

@@ -2,7 +2,7 @@ from timer import Timer
 import time as tm
 from cogmodel import CognitiveModel
 from chunkCog import Chunk
-from success import Success
+from enums import Success, Actor
 import temporal
 
 
@@ -28,17 +28,19 @@ class Model(CognitiveModel):
         print("get_top_card", self.deck_top_card)
         return self.deck_top_card
 
-    def update_top_card(self, new_top_card):
+    def update_top_card(self, new_top_card, actor):
         print("update_top_card", new_top_card)
         current_top_card = self.get_top_card()
         if new_top_card > current_top_card:
             self.deck_top_card = new_top_card
+            # model "sees" change in game-state
+            self.set_pile(new_top_card)
         else:
             print("New card is lower can previous top card, retaining previous top card, but still deliberating", current_top_card)
-        # model "sees" change in game-state
-        self.set_pile(new_top_card)
         # Played played a card, wait for some seconds to maybe play model card?
         # self.temp_play_card_smart()
+        # temporarily always reset after 
+        self.reset_goal(partial = True)
         self.deliberate()
 
     def deliberate(self):
@@ -58,6 +60,7 @@ class Model(CognitiveModel):
             success = self.goal.slots["success"]
 
             # add time for production to fire
+            tm.sleep(0.05)
             self.time += 0.05
 
             # process last play if it exists
@@ -84,6 +87,7 @@ class Model(CognitiveModel):
                 self.goal.slots["gap"] = new_gap
                 print(f"calculating difference between {hand} and {pile}...", "calculated gap is", new_gap)
                 # add time for modifying goal buffer
+                tm.sleep(0.05)
                 self.time += 0.05
                 self.reset_imaginal()
                 self.deliberate()
@@ -95,6 +99,7 @@ class Model(CognitiveModel):
                 pulses = self.get_wait_time(gap)
                 self.goal.slots["wait"] = pulses
                 # add time for modifying goal buffer
+                tm.sleep(0.05)
                 self.time += 0.05
                 self.deliberate()
                 return
@@ -144,7 +149,7 @@ class Model(CognitiveModel):
         self.set_hand(self.get_lowest_card())
         await self.sio.emit('play_card', card)
         # self.time += timer.timeout
-        self.update_top_card(card)
+        self.update_top_card(card, Actor.model)
 
     # noinspection PyMethodMayBeStatic
     def get_shuriken_response(self):
@@ -164,7 +169,6 @@ class Model(CognitiveModel):
         self.wait_time = tm.time() - self.wait_time
         print(f"I'd been waiting for {self.wait_time} seconds when I lost a life.")
         self.lives_left -= 1
-        self.update_state()
         if self.goal is not None:
             if caused_by_human:
                 # model played a card too early
@@ -172,18 +176,17 @@ class Model(CognitiveModel):
             else:
                 # modedl played a card too late
                 self.goal.slots["success"] = Success.late
+            tm.sleep(0.05)
             self.time += 0.05
         self.deliberate()
 
     def add_life(self, amount):
         print("add life")
         self.lives_left += amount
-        self.update_state()
 
     def add_shuriken(self, amount):
         print("add shuriken")
         self.shurikens_left += amount
-        self.update_state()
 
     def update_state(self):
         print('[Updating model state]')
@@ -204,15 +207,15 @@ class Model(CognitiveModel):
                 print(f"Proccessing feedback for waiting {time} pulses for gap {gap}...")
                 # model played a card too early
                 if success == Success.early:
-                    # set new time as 10% later than that the model played (and a life was lost)
-                    new_time = self.wait_time + (self.wait_time * 0.1)
+                    # set new time as 15% later than the model played (and a life was lost)
+                    new_time = time + (time * 0.15)
                     new_time = temporal.time_to_pulses(new_time)
                     self.add_wait_fact(gap, new_time, in_csv=False)
                     print(f"I should have waited longer; I will try waiting {new_time} for gap {gap}.")
                 # model played a card too late
                 if success == Success.late:
-                    # set new time as 10% earlier than that the player played (and a life was lost)
-                    new_time = self.wait_time - (self.wait_time * 0.1)
+                    # set new time as 15% earlier than that the player played (and a life was lost)
+                    new_time = self.wait_time - (self.wait_time * 0.15)
                     new_time = temporal.time_to_pulses(new_time)
                     self.add_wait_fact(gap, new_time, in_csv=False)
                     print(f"I should have played sooner; I will try waiting {new_time} for gap {gap}.")
@@ -242,18 +245,20 @@ class Model(CognitiveModel):
     def new_game(self):
         print("new_game")
         self.reset_game()
-        self.update_state()
 
     def new_round(self, new_hand):
         print("new_round")
         self.reset_timer()
         self.reset_round()
-        self.update_model_hand(new_hand)
         self.update_player_hand_size(len(new_hand))
+        self.update_model_hand(new_hand)
+
 
     def reset_timer(self):
         print("reset_timer")
-        pass
+        if self.timer is not None:
+            self.timer.cancel()
+            self.timer = None
 
     def reset_game(self):
         print("reset_game")

@@ -1,6 +1,7 @@
 from model import Model
 from cogmodel import CognitiveModel
 import temporal
+from enums import Actor
 
 m = Model()
 m.new_game()
@@ -19,7 +20,7 @@ def testcase_newround():
 
 # Test whether model can process new top card
 def testcase_cardplayed():
-	m.update_top_card(4)
+	m.update_top_card(4, Actor.player)
 	print(m.goal)
 
 def testcase_waitfacts():
@@ -48,7 +49,7 @@ def testcase_deliberate():
 
 # Test the different success types
 def testcase_success():
-	m.update_top_card(14)
+	m.update_top_card(14, Actor.player)
 	print(m.goal)
 	m.life_lost(False)
 	print(m.goal)
