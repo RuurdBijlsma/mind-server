@@ -40,7 +40,7 @@ class Model(CognitiveModel):
             print("New card is lower can previous top card, retaining previous top card, but still deliberating",
                   current_top_card)
             if actor == Actor.player and self.goal.slots["success"] is not None \
-            and self.goal.slots["success"][0] == Success.pending:
+                    and self.goal.slots["success"][0] == Success.pending:
                 self.goal.slots["success"] = (Success.early, Actor.player)
             tm.sleep(0.05)
             self.time += 0.05
@@ -134,9 +134,9 @@ class Model(CognitiveModel):
         if self.get_player_hand_size() == 0:
             print("Player's hand is empty.")
             if self.hand:
-              if self.timer is None:
-                self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
-              return
+                if self.timer is None:
+                    self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
+                return
 
         # hand is empty (and latest feedback has been processed)
         if len(self.hand) == 0:

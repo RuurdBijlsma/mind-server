@@ -1,13 +1,12 @@
 class Chunk(object):
 
-    def __init__(self, name, slots, blc = 0):
+    def __init__(self, name, slots, blc=0):
         self.name = name
         self.slots = slots
         self.encounters = []
-        self.fan = 0 # How many other chunks refer to this chunk?
-        self.blc = blc # the base-level activation constant
+        self.fan = 0  # How many other chunks refer to this chunk?
+        self.blc = blc  # the base-level activation constant
 
-    
     def add_encounter(self, time):
         """
         Add an encounter of this chunk at the specified time.
@@ -15,10 +14,9 @@ class Chunk(object):
         if time not in self.encounters:
             self.encounters.append(time)
 
-
     def __str__(self):
         return "Chunk " + str(self.name) + "\n" \
-        "Slots: " + str(self.slots) + "\n" \
-        "Encounters: " + str(self.encounters) + "\n" \
-        "Fan: " + str(self.fan) + "\n"
-    
+                                           "Slots: " + str(self.slots) + "\n" \
+                                                                         "Encounters: " + str(self.encounters) + "\n" \
+                                                                                                                 "Fan: " + str(
+            self.fan) + "\n"
