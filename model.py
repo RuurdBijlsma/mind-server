@@ -37,7 +37,8 @@ class Model(CognitiveModel):
             self.set_pile(new_top_card)
             self.set_pending(actor)
         else:
-            print("New card is lower can previous top card, retaining previous top card, but still deliberating", current_top_card)
+            print("New card is lower can previous top card, retaining previous top card, but still deliberating",
+                  current_top_card)
             self.goal.slots["success"] = (Success.early, Actor.player)
             tm.sleep(0.05)
             self.time += 0.05
@@ -67,16 +68,16 @@ class Model(CognitiveModel):
             else:
                 return
         if success[1] == Actor.player:
-            if hand < pile: 
+            if hand < pile:
                 self.goal.slots["success"] = Success.late, Actor.model
             else:
                 print("The situation's changed. Recalculating...")
-                self.reset_goal(partial = True)
+                self.reset_goal(partial=True)
 
     async def set_success(self):
         if self.goal is None:
             raise ValueError("Model has lost track of the game state...")
-            return 
+            return
         print("My card was played succesfully.")
         self.goal.slots["success"] = (Success.success, Actor.model)
         self.time += 0.05
@@ -90,7 +91,7 @@ class Model(CognitiveModel):
             return
 
         print(f"Start model deliberate with goal:\n {goal}")
-            
+
         # add time for production to fire
         tm.sleep(0.05)
         self.time += 0.05
@@ -121,7 +122,7 @@ class Model(CognitiveModel):
         if success is not None and success[0] != Success.pending:
             print(f"Processing feedback from {success}...")
             self.process_feedback(success, gap, wait)
-            self.reset_goal(partial = True)
+            self.reset_goal(partial=True)
             self.deliberate()
             return
 
@@ -173,8 +174,6 @@ class Model(CognitiveModel):
             self.timer = Timer((seconds + mt), self.play_lowest_card)
             # set wait time as starting time (minus movement time)
             self.wait_time = tm.time() - mt
-
-
 
     def temp_play_card_smart(self):
         print("temp_play_card_smart")
@@ -251,7 +250,7 @@ class Model(CognitiveModel):
             raise ValueError("Lost track of game-state...")
         if success is None:
             raise ValueError("No feedback to process...")
-      
+
         print(f"Proccessing feedback for waiting {time} pulses for gap {gap}...")
         # model played a card too early
         if success[0] == Success.early:
@@ -302,7 +301,6 @@ class Model(CognitiveModel):
         self.reset_round()
         self.update_player_hand_size(len(new_hand))
         self.update_model_hand(new_hand)
-
 
     def reset_timer(self):
         print("reset_timer")
