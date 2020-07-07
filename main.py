@@ -24,6 +24,11 @@ def card_played(sid, number):
 
 
 @sio.event
+def update_top_card(sid, number):
+    model.update_top_card(number, Actor.model)
+
+
+@sio.event
 async def shuriken_proposed(sid):
     print(f"Player proposed shuriken")
     # Ask model for response here
