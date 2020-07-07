@@ -39,7 +39,8 @@ class Model(CognitiveModel):
         else:
             print("New card is lower can previous top card, retaining previous top card, but still deliberating",
                   current_top_card)
-            self.goal.slots["success"] = (Success.early, Actor.player)
+            if actor == Actor.player:
+                self.goal.slots["success"] = (Success.early, Actor.player)
             tm.sleep(0.05)
             self.time += 0.05
         # Played played a card, wait for some seconds to maybe play model card?
@@ -127,9 +128,10 @@ class Model(CognitiveModel):
         # possibly, handle playing all cards when player's hand is empty here:
         if self.get_player_hand_size() == 0:
             print("Player's hand is empty.")
-            return
-            # if self.hand:
-            #   self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
+            if self.hand:
+              if self.timer is None:
+                self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
+              return
 
         # hand is empty (and latest feedback has been processed)
         if len(self.hand) == 0:
@@ -143,7 +145,8 @@ class Model(CognitiveModel):
 
         if hand is not None and hand < pile:
             print("I've got cards lower than the pile... I should play those first.")
-            self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
+            if self.timer is None:
+                self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
             return
 
         # Model knows its hand and the deck top card, but does not yet know the gap
