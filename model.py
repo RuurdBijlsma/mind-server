@@ -83,7 +83,12 @@ class Model(CognitiveModel):
         self.time += 0.05
         self.deliberate()
 
+    async def propose_shuriken(self):
+        await self.sio.emit('propose_shuriken')
+
     def deliberate(self):
+        # self.propose_shuriken()
+
         goal = self.goal
 
         if goal is None:
