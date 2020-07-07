@@ -54,6 +54,11 @@ def life_lost(sid, caused_by_human):
 
 
 @sio.event
+def reveal_lowest_card(sid, card):
+    model.reveal_player_lowest_card(card)
+
+
+@sio.event
 def get_life(sid, amount):
     print("Bonus life!", amount)
     model.add_life(amount)
