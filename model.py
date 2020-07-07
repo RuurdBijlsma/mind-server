@@ -62,7 +62,7 @@ class Model(CognitiveModel):
     def determine_success(self, success, hand, pile):
         if success[1] == Actor.model:
             if self.timer is None:
-                wait = 2 + 0.05
+                wait = 5 + 0.05
                 print(f"Giving player {wait} seconds to object to my card.")
                 self.timer = Timer(wait, self.set_success)
             else:
@@ -108,13 +108,6 @@ class Model(CognitiveModel):
         wait = goal.slots["wait"]
         success = goal.slots["success"]
 
-        # possibly, handle playing all cards when player's hand is empty here:
-        if self.get_player_hand_size() == 0:
-            print("Player's hand is empty.")
-            return
-            # if self.hand:
-            #   self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
-
         # process last play 
         if success is not None and success[0] == Success.pending:
             print("Evaluating last card played...")
@@ -131,6 +124,13 @@ class Model(CognitiveModel):
             self.deliberate()
             return
 
+        # possibly, handle playing all cards when player's hand is empty here:
+        if self.get_player_hand_size() == 0:
+            print("Player's hand is empty.")
+            return
+            # if self.hand:
+            #   self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
+
         # hand is empty (and latest feedback has been processed)
         if len(self.hand) == 0:
             print("our hand is empty, no actions left to do")
@@ -141,7 +141,7 @@ class Model(CognitiveModel):
             print("Waiting indefinitely, model card = 100")
             return
 
-        if hand < pile:
+        if hand is not None and hand < pile:
             print("I've got cards lower than the pile... I should play those first.")
             self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
             return
