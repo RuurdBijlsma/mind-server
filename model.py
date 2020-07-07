@@ -54,12 +54,13 @@ class Model(CognitiveModel):
         self.deliberate()
 
     def set_pending(self, actor):
-        if actor == Actor.model:
-            self.goal.slots["success"] = (Success.pending, Actor.model)
-        if actor == Actor.player:
-            self.goal.slots["success"] = (Success.pending, Actor.player)
-        tm.sleep(0.05)
-        self.time += 0.05
+        if self.goal.slots["success"] is None:
+            if actor == Actor.model and self.get_player_hand_size() > 0:
+                self.goal.slots["success"] = (Success.pending, Actor.model)
+            if actor == Actor.player and self.hand:
+                self.goal.slots["success"] = (Success.pending, Actor.player)
+            tm.sleep(0.05)
+            self.time += 0.05
 
     def determine_success(self, success, hand, pile):
         if success[1] == Actor.model:
