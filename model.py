@@ -97,6 +97,10 @@ class Model(CognitiveModel):
             raise ValueError("Model has lost track of the game state...")
             return
 
+        if self.lives_left <= 0:
+            print("We are dead.")
+            return
+
         print(f"Start model deliberate with goal:\n {goal}")
 
         # add time for production to fire
