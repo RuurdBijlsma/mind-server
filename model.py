@@ -279,6 +279,11 @@ class Model(CognitiveModel):
             self.add_wait_fact(gap, time)
             print(f"Waiting {time} worked out; I will wait that long again next time I see gap {gap}.")
 
+    def reveal_player_lowest_card(self, card):
+        print("Shuriken reveal player's lowest card", card)
+        # Add model stuff here
+        pass
+
     def get_player_hand_size(self):
         print("get_player_hand_size", self.player_hand_size)
         return self.player_hand_size
