@@ -65,24 +65,29 @@ class CognitiveModel(ACTRModel):
 	def _add_goal(self):
 		goal_0 = Chunk(name = "goal", slots = {"type": "game-state", "hand": None, "pile": 0,
 			"gap": None, "wait": None, "success": None})
+		tm.sleep(0.05)
 		self.goal = goal_0
 		# setting a goal takes 50 ms
-		tm.sleep(0.05)
 		self.time += 0.05
 
 	def set_pile(self, top_card):
 		# goal should always exist, but check to avoid errors
 		if self.goal is not None:
+			tm.sleep(0.05)
 			self.goal.slots["pile"] = top_card
+			self.time += 0.05
 		else:
-			print("ERROR: Goal does not exist thus cannot be adjusted.")
+			raise ValueError("Goal does not exist thus cannot be adjusted.")
 
 	def set_hand(self, lowest_card):
 		# goal should always exist, but check to avoid errors
 		if self.goal is not None:
+			tm.sleep(0.05)
 			self.goal.slots["hand"] = lowest_card
+			self.time += 0.05
 		else:
-			print("ERROR: Goal does not exist thus cannot be adjusted.")
+			raise ValueError("Goal does not exist thus cannot be adjusted.")
+
 
 	# generates time for the model to perform a movement + randomness
 	# t can be generated with Fitt's Law by is set as 0.1 as mimimum-time, n = 3 by default
@@ -98,9 +103,10 @@ class CognitiveModel(ACTRModel):
 
 	def get_wait_time(self, gap):
 		blend_pattern = Chunk(name = "blend-pattern", slots = {"type": "wait-fact", "gap": gap})
+		tm.sleep(0.05)
 		wait_time, latency = self.retrieve_blended_trace(blend_pattern, "wait")
+		tm.sleep(latency)
 		# add time for retrieval request
-		tm.sleep(0.05 + latency)
 		self.time += 0.05 + latency
 		# if model has seen this gap before, return wait time
 		if wait_time is not None:
@@ -108,9 +114,10 @@ class CognitiveModel(ACTRModel):
 		# if model has not seen this gap before, return wait time of most similar gap
 		else:
 			partial_pattern = Chunk(name = "partial-pattern", slots = {"type": "wait-fact", "gap": gap})
+			tm.sleep(0.05)
 			wait_fact, latency = self.retrieve_partial(partial_pattern)
+			tm.sleep(latency)
 			# add time for second retrieval request
-			tm.sleep(0.05 + latency)
 			self.time += 0.05 + latency
 			return wait_fact.slots["wait"]
 		return None
@@ -130,9 +137,9 @@ class CognitiveModel(ACTRModel):
 			tens_hand, ones_hand = self.sep_number(hand)
 			tens_pile, ones_pile = self.sep_number(pile)
 			calc_gap = Chunk(name = "calc-gap", slots = {"ones1": ones_hand, "ones2": ones_pile, "tens1": tens_hand, "tens2": tens_pile, "gap-tens": None, "gap-ones": None, "gap-tot": None})
+			tm.sleep(0.2)
 			self.imaginal = calc_gap
 			# imaginal request takes 200 ms
-			tm.sleep(0.2)
 			self.time += 0.2
 			self.determine_gap(hand, pile)
 		
@@ -144,13 +151,14 @@ class CognitiveModel(ACTRModel):
 			tens_pile = self.imaginal.slots["tens2"]
 			# get gap fact for tens
 			pattern = Chunk(name = "retrieve", slots = {"type": "gap-fact", "num1": tens_hand, "num2": tens_pile})
+			tm.sleep(0.05)
 			chunk, latency = self.retrieve(pattern)
+			tm.sleep(latency)
 			# add time for retrieval request and time it takes to get chunk
-			tm.sleep(0.05 + latency)
 			self.time += 0.05 + latency
+			tm.sleep(0.2)
 			self.imaginal.slots["gap-tens"] = chunk.slots["gap"]
 			# modifying imaginal buffer takes time
-			tm.sleep(0.2)
 			self.time += 0.2
 			self.determine_gap(hand, pile)
 
@@ -161,13 +169,14 @@ class CognitiveModel(ACTRModel):
 			ones_hand = self.imaginal.slots["ones1"]
 			ones_pile = self.imaginal.slots["ones2"]
 			pattern = Chunk(name = "retrieve", slots = {"type": "gap-fact", "num1": ones_hand, "num2": ones_pile})
+			tm.sleep(0.05)
 			chunk, latency = self.retrieve(pattern)
+			tm.sleep(latency)
 			# add time for retrieval request and time it takes to get chunk
-			tm.sleep(0.05 + latency)
 			self.time += 0.05 + latency
+			tm.sleep(0.2)
 			self.imaginal.slots["gap-ones"] = chunk.slots["gap"]
 			# modifying imaginal buffer takes time
-			tm.sleep(0.2)
 			self.time += 0.2
 			self.determine_gap(hand, pile)
 
@@ -181,9 +190,9 @@ class CognitiveModel(ACTRModel):
 				gap_tens = 0
 			gap_ones = self.imaginal.slots["gap-ones"]
 			gap_tot = gap_tens * 10 + gap_ones
+			tm.sleep(0.2)
 			self.imaginal.slots["gap_tot"] = gap_tot
 			# modifying imaginal buffer takes time
-			tm.sleep(0.2)
 			self.time += 0.2
 			return gap_tot
 
@@ -193,13 +202,13 @@ class CognitiveModel(ACTRModel):
 		print("model goal reset")
 		# If goal has already been created, reset its slots
 		if self.goal is not None:
+			tm.sleep(0.05)
 			if not partial:
 				self.goal.slots["hand"] = None
 				self.goal.slots["pile"] = 0
 			self.goal.slots["gap"] = None
 			self.goal.slots["wait"] = None
 			self.goal.slots["success"] = None
-			tm.sleep(0.05)
 			self.time += 0.05
 		else:
 			# if goal chunk does not yet exist, create it

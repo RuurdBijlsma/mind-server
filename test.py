@@ -1,6 +1,7 @@
 from model import Model
 from cogmodel import CognitiveModel
 import temporal
+import time as tm
 from enums import Actor
 
 m = Model()
@@ -48,11 +49,10 @@ def testcase_deliberate():
 	m.deliberate()
 
 # Test the different success types
-def testcase_success():
+def testcase_success_late():
+	# success.late
+	tm.sleep(2)
 	m.update_top_card(14, Actor.player)
-	print(m.goal)
-	m.life_lost(False)
-	print(m.goal)
 
 
 testcase_newround()
@@ -60,4 +60,4 @@ testcase_newround()
 #testcase_waitfacts()
 #testcase_calcgap()
 #testcase_deliberate()
-testcase_success()
+testcase_success_late()
