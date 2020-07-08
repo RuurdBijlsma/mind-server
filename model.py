@@ -24,74 +24,9 @@ class Model(CognitiveModel):
         self.timer = None
         self.wait_time = 0
 
-    def get_top_card(self):
-        print("get_top_card", self.deck_top_card)
-        return self.deck_top_card
-
-    def update_top_card(self, new_top_card, actor):
-        print("update_top_card", new_top_card)
-        current_top_card = self.get_top_card()
-        if new_top_card > current_top_card:
-            self.deck_top_card = new_top_card
-            # model "sees" change in game-state
-            self.set_pile(new_top_card)
-            self.set_pending(actor)
-        else:
-            print("New card is lower can previous top card, retaining previous top card, but still deliberating",
-                  current_top_card)
-            if actor == Actor.player and self.goal.slots["success"] is not None \
-                    and self.goal.slots["success"][0] == Success.pending:
-                self.goal.slots["success"] = (Success.early, Actor.player)
-            tm.sleep(0.05)
-            self.time += 0.05
-        # Played played a card, wait for some seconds to maybe play model card?
-        # self.temp_play_card_smart()
-        # temporarily always reset after 
-        if self.wait_time > 0:
-            self.wait_time = tm.time() - self.wait_time
-        self.reset_timer()
-        # self.reset_goal(partial = True)
-        self.deliberate()
-
-    def set_pending(self, actor):
-        if self.goal.slots["success"] is None:
-            if actor == Actor.model and self.get_player_hand_size() > 0:
-                self.goal.slots["success"] = (Success.pending, Actor.model)
-            if actor == Actor.player and self.hand:
-                self.goal.slots["success"] = (Success.pending, Actor.player)
-            tm.sleep(0.05)
-            self.time += 0.05
-
-    def determine_success(self, success, hand, pile):
-        if success[1] == Actor.model:
-            if self.timer is None:
-                wait = 5 + 0.05
-                print(f"Giving player {wait} seconds to object to my card.")
-                self.timer = Timer(wait, self.set_success)
-            else:
-                return
-        if success[1] == Actor.player:
-            if hand < pile:
-                self.goal.slots["success"] = Success.late, Actor.model
-            else:
-                print("The situation's changed. Recalculating...")
-                self.reset_goal(partial=True)
-
-    async def set_success(self):
-        if self.goal is None:
-            raise ValueError("Model has lost track of the game state...")
-            return
-        print("My card was played succesfully.")
-        self.goal.slots["success"] = (Success.success, Actor.model)
-        self.time += 0.05
-        self.deliberate()
-
-    async def propose_shuriken(self):
-        await self.sio.emit('propose_shuriken')
+    # the "main" function of the model which decides all model actions
 
     def deliberate(self):
-        # self.propose_shuriken()
-
         goal = self.goal
 
         if goal is None:
@@ -99,7 +34,7 @@ class Model(CognitiveModel):
             return
 
         if self.lives_left <= 0:
-            print("We are dead.")
+            print("Unfortunately, we died.")
             return
 
         print(f"Start model deliberate with goal:\n {goal}")
@@ -115,6 +50,8 @@ class Model(CognitiveModel):
         wait = goal.slots["wait"]
         success = goal.slots["success"]
 
+        # self.propose_shuriken()
+
         # process last play 
         if success is not None and success[0] == Success.pending:
             print("Evaluating last card played...")
@@ -123,7 +60,7 @@ class Model(CognitiveModel):
                 self.deliberate()
             return
 
-        # process feedback 
+        # process feedback from last play
         if success is not None and success[0] != Success.pending:
             print(f"Processing feedback from {success}...")
             self.process_feedback(success, gap, wait)
@@ -131,15 +68,17 @@ class Model(CognitiveModel):
             self.deliberate()
             return
 
-        # possibly, handle playing all cards when player's hand is empty here:
+        # if player's hand is empty, model plays all its left-over cards
         if self.get_player_hand_size() == 0:
             print("Player's hand is empty.")
+            # if player's hand "exists", i.e. it is not empty
             if self.hand:
+                # if player isn't already in the process of playing a card
                 if self.timer is None:
                     self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
                 return
 
-        # hand is empty (and latest feedback has been processed)
+        # if hand is empty (and latest feedback has been processed), there is nothing left to do
         if len(self.hand) == 0:
             print("our hand is empty, no actions left to do")
             return
@@ -149,6 +88,7 @@ class Model(CognitiveModel):
             print("Waiting indefinitely, model card = 100")
             return
 
+        # if a higher card was played than in the model's hand, play those lower cards first
         if hand is not None and hand < pile:
             print("I've got cards lower than the pile... I should play those first.")
             if self.timer is None:
@@ -189,30 +129,12 @@ class Model(CognitiveModel):
             # set wait time as starting time (minus movement time)
             self.wait_time = tm.time() - mt
 
-    def temp_play_card_smart(self):
-        print("temp_play_card_smart")
-        # TEMPORARY (This just waits n seconds where n is the gap before playing lowest card)
-        if self.timer is not None:
-            self.timer.cancel()
-        if len(self.hand) == 0:
-            print("our hand is empty, no actions left to do")
-            return
-        lowest_card = self.get_lowest_card()
-        gap = lowest_card - self.get_top_card()
-        print(f"Waiting {gap} seconds before playing {lowest_card}")
-        self.timer = Timer(gap, self.play_lowest_card)
-
-    def get_lowest_card(self):
-        if len(self.hand) == 1:
-            return self.hand[0]
-        if len(self.hand) == 0:
-            return None
-        return min(*self.hand)
-
+    # model plays its lowest card
     async def play_lowest_card(self):
         lowest_card = self.get_lowest_card()
         await self.play_card(lowest_card)
 
+    # model plays a card
     async def play_card(self, card):
         print("play_card", card)
         self.hand.remove(card)
@@ -221,44 +143,90 @@ class Model(CognitiveModel):
         await self.sio.emit('play_card', card)
         self.update_top_card(card, Actor.model)
 
-    # noinspection PyMethodMayBeStatic
-    def get_shuriken_response(self):
-        print("get_shuriken_response")
-        return True
+    # function to process a change in the top card of the pile
+    def update_top_card(self, new_top_card, actor):
+        print("update_top_card", new_top_card)
+        current_top_card = self.get_top_card()
+        # only update the top card if the new card is higher
+        if new_top_card > current_top_card:
+            self.deck_top_card = new_top_card
+            # model "sees" change in game-state
+            self.set_pile(new_top_card)
+            # flag that a change in top card means a change in model success
+            self.set_pending(actor)
+        else:
+            print("New card is lower can previous top card, retaining previous top card, but still deliberating",
+                  current_top_card)
+            # if actor plays a lower card after model just played a card, we lose a life
+            if actor == Actor.player and self.goal.slots["success"] is not None \
+                    and self.goal.slots["success"][0] == Success.pending:
+                self.life_lost(caused_by_human = True)
+        # set final wait_time to time between card plays
+        if self.wait_time > 0:
+            self.wait_time = tm.time() - self.wait_time
+        self.reset_timer()
+        self.deliberate()
 
-    # noinspection PyMethodMayBeStatic
-    def set_player_shuriken_response(self, response, lowest_card):
-        print("set_player_shuriken_response")
-        pass
+    def get_top_card(self):
+        print("get_top_card", self.deck_top_card)
+        return self.deck_top_card
 
+    # remember who played the last card and set success of that play to pending
+    def set_pending(self, actor):
+        if self.goal.slots["success"] is None:
+            if actor == Actor.model and self.get_player_hand_size() > 0:
+                self.goal.slots["success"] = (Success.pending, Actor.model)
+            if actor == Actor.player and self.hand:
+                self.goal.slots["success"] = (Success.pending, Actor.player)
+            tm.sleep(0.05)
+            self.time += 0.05
+
+    # determine whether the last play was succesful
+    def determine_success(self, success, hand, pile):
+        # if the model played last
+        if success[1] == Actor.model:
+            if self.timer is None:
+                wait = 5 + 0.05
+                print(f"Giving player {wait} seconds to object to my card.")
+                self.timer = Timer(wait, self.set_success)
+            else:
+                return
+        # if the player played last
+        if success[1] == Actor.player:
+            # we lose a life if we still had a lower card than the last played card in hand
+            if hand is not None and hand < pile:
+                self.life_lost(caused_by_human = False)
+            else:
+                # we only have cards higher than the last played card, but the gap has changed
+                print("The situation's changed. Recalculating...")
+                self.reset_goal(partial=True)
+
+    # model decides its card was played successfully
+    async def set_success(self):
+        if self.goal is None:
+            raise ValueError("Model has lost track of the game state...")
+            return
+        print("My card was played succesfully.")
+        self.goal.slots["success"] = (Success.success, Actor.model)
+        self.time += 0.05
+        self.deliberate()
+
+    # process when a life is lost
     def life_lost(self, caused_by_human):
-        # If it's caused by a human the model played a card too early
-        # Else it played a card too late
         print("life_lost")
-        # wait time becomes current time minus old wait_time
-        self.wait_time = tm.time() - self.wait_time
-        print(f"I'd been waiting for {self.wait_time} seconds when I lost a life.")
         self.lives_left -= 1
+        # update the model with to the correct situation
         if self.goal is not None:
             if caused_by_human:
                 # model played a card too early
-                self.goal.slots["success"] = Success.early
+                self.goal.slots["success"] = Success.early, Actor.player
             else:
-                # modedl played a card too late
-                self.goal.slots["success"] = Success.late
+                # model played a card too late
+                self.goal.slots["success"] = Success.late, Actor.model
             tm.sleep(0.05)
             self.time += 0.05
-        self.deliberate()
 
-    def add_life(self, amount):
-        print("add life")
-        self.lives_left += amount
-
-    def add_shuriken(self, amount):
-        print("add shuriken")
-        self.shurikens_left += amount
-
-    # function to process whether a card play was successful or not
+    # process the feedback from the last card play
     def process_feedback(self, success, gap, time):
         if self.goal is None:
             raise ValueError("Lost track of game-state...")
@@ -266,6 +234,7 @@ class Model(CognitiveModel):
             raise ValueError("No feedback to process...")
 
         print(f"Proccessing feedback for waiting {time} pulses for gap {gap}...")
+
         # model played a card too early
         if success[0] == Success.early:
             # set new time as 15% later than the model played (and a life was lost)
@@ -288,10 +257,39 @@ class Model(CognitiveModel):
             self.add_wait_fact(gap, time)
             print(f"Waiting {time} worked out; I will wait that long again next time I see gap {gap}.")
 
+    # propose to use a shuriken
+    async def propose_shuriken(self):
+        await self.sio.emit('propose_shuriken')
+
+    def get_lowest_card(self):
+        if len(self.hand) == 1:
+            return self.hand[0]
+        if len(self.hand) == 0:
+            return None
+        return min(*self.hand)
+
+    # noinspection PyMethodMayBeStatic
+    def get_shuriken_response(self):
+        print("get_shuriken_response")
+        return True
+
+    # noinspection PyMethodMayBeStatic
+    def set_player_shuriken_response(self, response, lowest_card):
+        print("set_player_shuriken_response")
+        pass
+
     def reveal_player_lowest_card(self, card):
         print("Shuriken reveal player's lowest card", card)
         # Add model stuff here
         pass
+
+    def add_life(self, amount):
+        print("add life")
+        self.lives_left += amount
+
+    def add_shuriken(self, amount):
+        print("add shuriken")
+        self.shurikens_left += amount
 
     def get_player_hand_size(self):
         print("get_player_hand_size", self.player_hand_size)
