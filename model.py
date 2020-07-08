@@ -89,6 +89,14 @@ class Model(CognitiveModel):
     async def propose_shuriken(self):
         await self.sio.emit('propose_shuriken')
 
+    async def discard_card(self, card):
+        if card not in self.hand:
+            print("Cannot discard card that is not in models hand!")
+            return
+        self.hand.remove(card)
+        self.update_model_hand(self.hand)
+        self.sio.emit('discard_card', card)
+
     def deliberate(self):
         # self.propose_shuriken()
 
