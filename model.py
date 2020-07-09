@@ -24,6 +24,7 @@ class Model(CognitiveModel):
         # Temp
         self.timer = None
         self.check_in = None
+        self.discard_timer = None
         self.wait_time = 0
 
     # the "main" function of the model which decides all model action
@@ -86,8 +87,8 @@ class Model(CognitiveModel):
         # if a higher card was played than in the model's hand, play those lower cards first
         if hand is not None and hand < pile:
             print("I've got cards lower than the pile... I should discard those first.")
-            if self.timer is None:
-                self.timer = Timer(self.get_movement_time(), self.discard_lowest_card)
+            if self.discard_timer is None:
+                self.discard_timer = Timer(self.get_movement_time(), self.discard_lowest_card)
             return
 
         # Model knows its hand and the deck top card, but does not yet know the gap
@@ -157,6 +158,7 @@ class Model(CognitiveModel):
         self.hand.remove(card)
         self.update_model_hand(self.hand)
         await self.sio.emit('discard_card', card)
+        print("Discard event sent to client")
 
     # function to process a change in the top card of the pile
     def update_top_card(self, new_top_card, actor):
@@ -404,6 +406,9 @@ class Model(CognitiveModel):
         if self.check_in is not None:
             self.check_in.cancel()
             self.check_in = None
+        if self.discard_timer is not None:
+            self.discard_timer.cancel()
+            self.discard_timer = None
 
     def reset_game(self):
         print("reset_game")

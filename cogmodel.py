@@ -4,6 +4,8 @@ import temporal
 import time as tm
 import pandas as pd
 import numpy as np
+from os import path
+import os
 
 
 # The cognitive part of the game's model
@@ -15,10 +17,23 @@ class CognitiveModel(ACTRModel):
         # initialise memory
         self._init_memory()
 
+        self.learned_memory = []
+
     # Initialise declarative memory with gap facts and pulse durations
     def _init_memory(self):
         self._add_gap_facts()
         self._add_wait_facts()
+        self.load_learned_memory()
+
+    def load_learned_memory(self):
+        if not path.isfile('data/learned_memory.csv'):
+            return
+
+        data = pd.read_csv('data/learned_memory.csv', usecols=['Gap', 'Pulses'])
+        self.learned_memory = [(gap, pulses) for [gap, pulses] in data.to_numpy()]
+        print("loaded learned memory")
+        # for gap, time in array:
+        #     self.add_wait_fact(gap, time)
 
     # Generate chunks for the gap facts and add them to memory
     def _add_gap_facts(self):
@@ -53,6 +68,10 @@ class CognitiveModel(ACTRModel):
             self.add_encounter(wait_fact)
 
     def _add_to_csv(self, gap, pulses):
+        if (gap, pulses) in self.learned_memory:
+            print("Gap/pulses combination is already in learned memory, not adding to the csv")
+            return  # Don't add existing fact to learned_memory.csv
+        self.learned_memory.append((gap, pulses))
         seconds = temporal.pulses_to_time(pulses)
         # initialise new row for csv
         row = [gap, seconds, pulses]
