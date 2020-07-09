@@ -23,6 +23,7 @@ class Model(CognitiveModel):
             self.sio = sio
         # Temp
         self.timer = None
+        self.check_in = None
         self.wait_time = 0
 
     # the "main" function of the model which decides all model action
@@ -46,8 +47,6 @@ class Model(CognitiveModel):
         wait = goal.slots["wait"]
         success = goal.slots["success"]
 
-        # self.propose_shuriken()
-
         # process last play 
         if success is not None and success[0] == Success.pending:
             print("Evaluating last card played...")
@@ -67,7 +66,7 @@ class Model(CognitiveModel):
         # if player's hand is empty, model plays all its left-over cards
         if self.get_player_hand_size() == 0:
             print("Player's hand is empty.")
-            # if player's hand "exists", i.e. it is not empty
+            # if model's hand "exists", i.e. it is not empty
             if self.hand:
                 # if player isn't already in the process of playing a card
                 if self.timer is None:
@@ -118,12 +117,18 @@ class Model(CognitiveModel):
         if wait is not None and success is None:
             seconds = temporal.pulses_to_time(wait)
             lowest_card = self.get_lowest_card()
-            print(f"Waiting {seconds} seconds before playing {lowest_card}")
+            print(f"Waiting {seconds:.2f} seconds before playing {lowest_card}")
             # time it takes for the model to perform a movement
             mt = self.get_movement_time()
-            self.timer = Timer((seconds + mt), self.play_lowest_card)
+            timeout = seconds + mt
             # set wait time as starting time (minus movement time)
             self.wait_time = tm.time() - mt
+            self.timer = Timer(timeout, self.play_lowest_card)
+            if timeout > 20:
+                self.check_in = Timer(20, self.check_time)
+            return
+
+        print("I don't know what to do...")
 
     # model plays its lowest card
     async def play_lowest_card(self):
@@ -151,7 +156,7 @@ class Model(CognitiveModel):
             return
         self.hand.remove(card)
         self.update_model_hand(self.hand)
-        self.sio.emit('discard_card', card)
+        await self.sio.emit('discard_card', card)
 
     # function to process a change in the top card of the pile
     def update_top_card(self, new_top_card, actor):
@@ -171,13 +176,8 @@ class Model(CognitiveModel):
             if actor == Actor.player and self.goal.slots["success"] is not None \
                     and self.goal.slots["success"][0] == Success.pending:
                 self.life_lost(caused_by_human=True)
-        # set final wait_time to time between card plays
-        if self.wait_time > 0:
-            self.wait_time = tm.time() - self.wait_time
         self.reset_timer()
-        # self.deliberate is already called in update_model_hand if the model played
-        if actor != Actor.model:
-            self.deliberate()
+        self.deliberate()
 
     def get_top_card(self):
         print("get_top_card", self.deck_top_card)
@@ -188,8 +188,18 @@ class Model(CognitiveModel):
         if self.goal.slots["success"] is None:
             if actor == Actor.model and self.get_player_hand_size() > 0:
                 self.goal.slots["success"] = (Success.pending, Actor.model)
+                self.wait_time = tm.time() - self.wait_time
+                print(f"We waited {self.wait_time:.2f} s to play the card.")
             if actor == Actor.player and self.hand:
                 self.goal.slots["success"] = (Success.pending, Actor.player)
+                self.wait_time = tm.time() - self.wait_time
+                print(f"We were waiting {self.wait_time:.2f} s when player played a card.")
+            tm.sleep(0.05)
+            self.time += 0.05
+        elif self.goal.slots["success"] == (Success.pending, Actor.model) \
+                and self.timer is not None:
+            self.timer.cancel()
+            self.goal.slots["success"] = Success.success, Actor.model
             tm.sleep(0.05)
             self.time += 0.05
 
@@ -265,10 +275,37 @@ class Model(CognitiveModel):
             # add new encounter of the successful wait fact
             self.add_wait_fact(gap, time)
             print(f"Waiting {time} worked out; I will wait that long again next time I see gap {gap}.")
+        self.wait_time = 0
+
+    async def check_time(self, long_time=15):
+        if self.timer is not None:
+            print("How long should I still wait?")
+            temp_time = tm.time() - self.wait_time
+            time_diff = self.timer.get_timeout() - temp_time
+            print(f"I've waited {temp_time:.2f} s and still need to wait {time_diff:.2f} s.")
+            if time_diff >= long_time:
+                print("Should I propose a shuriken?")
+                proposed = await self.propose_shuriken()
+                if not proposed:
+                    print("I'll keep waiting.")
+                    self.check_in = Timer(long_time, self.check_time)
+                else:
+                    return
+            else:
+                print("I'll play my card soon.")
 
     # propose to use a shuriken
     async def propose_shuriken(self):
-        await self.sio.emit('propose_shuriken')
+        if self.timer is None or self.wait_time == 0:
+            raise ValueError("We aren't waiting to play a card.")
+        propose = self.get_shuriken_response()
+        if propose:
+            print("I'll propose a shuriken.")
+            await self.sio.emit('propose_shuriken')
+            return True
+        else:
+            print("I won't propose a shuriken.")
+            return False
 
     def get_lowest_card(self):
         if len(self.hand) == 1:
@@ -278,14 +315,11 @@ class Model(CognitiveModel):
         return min(*self.hand)
 
     # function to determine if model accepts a shuriken proposal or not
-    def get_shuriken_response(self, gap_threshold=15):
+    def get_shuriken_response(self, gap_threshold=20):
         print("get_shuriken_response")
         # model's hand is 100 card (always played last)
         if self.get_lowest_card() == 100:
             print("The card in my hand is 100, so I don't want to use a shuriken.")
-            return False
-        # can't accept if there are no shuriken
-        if self.shurikens_left == 0:
             return False
         self.check_goal()
         gap = self.goal.slots["gap"]
@@ -314,7 +348,7 @@ class Model(CognitiveModel):
             else:
                 print(f"The gap is {gap}, which I consider small.")
                 p = [0.7, 0.3]  # probability biased towards accepting
-        print(f"The chance I'll accept the shuriken is {p[0]}.")
+        print(f"The chance I'll propose or accept a shuriken is {p[0]}.")
         return np.random.choice(choices, p=p)
 
     # noinspection PyMethodMayBeStatic
@@ -367,6 +401,9 @@ class Model(CognitiveModel):
         if self.timer is not None:
             self.timer.cancel()
             self.timer = None
+        if self.check_in is not None:
+            self.check_in.cancel()
+            self.check_in = None
 
     def reset_game(self):
         print("reset_game")

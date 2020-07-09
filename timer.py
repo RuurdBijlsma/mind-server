@@ -13,3 +13,6 @@ class Timer:
 
     def cancel(self):
         self._task.cancel()
+
+    def get_timeout(self):
+        return self._timeout
