@@ -261,7 +261,7 @@ class Model(CognitiveModel):
             # set new time as 15% later than the model played (and a life was lost)
             new_time = time + (time * 0.15)
             new_time = temporal.time_to_pulses(new_time)
-            self.add_wait_fact(gap, new_time, in_csv=False)
+            self.add_wait_fact(gap, new_time)
             print(f"I should have waited longer; I will try waiting {new_time} for gap {gap}.")
 
         # model played a card too late
@@ -269,13 +269,13 @@ class Model(CognitiveModel):
             # set new time as 15% earlier than that the player played (and a life was lost)
             new_time = self.wait_time - (self.wait_time * 0.15)
             new_time = temporal.time_to_pulses(new_time)
-            self.add_wait_fact(gap, new_time, in_csv=False)
+            self.add_wait_fact(gap, new_time)
             print(f"I should have played sooner; I will try waiting {new_time} for gap {gap}.")
 
         # model played a card just right
         if success[0] == Success.success:
             # add new encounter of the successful wait fact
-            self.add_wait_fact(gap, time)
+            self.add_wait_fact(gap, time, add_to_csv=True)
             print(f"Waiting {time} worked out; I will wait that long again next time I see gap {gap}.")
         self.wait_time = 0
 
@@ -393,6 +393,7 @@ class Model(CognitiveModel):
 
     def new_round(self, new_hand):
         print("new_round")
+        self.append_learned_memory()
         self.reset_timer()
         self.reset_round()
         self.update_player_hand_size(len(new_hand))

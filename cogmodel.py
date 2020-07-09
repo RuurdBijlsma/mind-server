@@ -16,8 +16,8 @@ class CognitiveModel(ACTRModel):
         self.rt = -2.0
         # initialise memory
         self._init_memory()
-
         self.learned_memory = []
+        self.mem_index = 0
 
     # Initialise declarative memory with gap facts and pulse durations
     def _init_memory(self):
@@ -28,9 +28,10 @@ class CognitiveModel(ACTRModel):
     def load_learned_memory(self):
         if not path.isfile('data/learned_memory.csv'):
             return
-
         data = pd.read_csv('data/learned_memory.csv', usecols=['Gap', 'Pulses'])
-        self.learned_memory = [(gap, pulses) for [gap, pulses] in data.to_numpy()]
+        array = data.to_numpy()
+        self.learned_memory = [(gap, pulses) for [gap, pulses] in array]
+        self.mem_index = len(self.learned_memory) - 1
         print("loaded learned memory")
         # for gap, time in array:
         #     self.add_wait_fact(gap, time)
@@ -44,7 +45,7 @@ class CognitiveModel(ACTRModel):
                                                          "num1": n1, "num2": n2, "gap": (n1 - n2)}, blc=10)
                 self.add_encounter(gap_fact)
 
-    # Generate chunks forthe wait facts and add them to memory
+    # Generate chunks for the wait facts and add them to memory
     def _add_wait_facts(self):
         # Get initial times to wait from timing_data csv
         data = pd.read_csv('data/init_memory.csv', usecols=['Gap', 'Pulses'])
@@ -53,34 +54,35 @@ class CognitiveModel(ACTRModel):
             self.add_wait_fact(gap, time)
 
     # Takes gap and time in pulse as arguments then creates a new wait fact in memory
-    def add_wait_fact(self, gap, time, in_csv=True):
+    def add_wait_fact(self, gap, time, add_to_csv=False):
         if gap is not None and time is not None:
             chunk_name = "g" + str(gap) + "-w" + str(time)
             wait_fact = Chunk(name=chunk_name, slots={"type": "wait-fact",
                                                       "gap": gap, "wait": time}, blc=5)
-            # fact is not in csv yet
-            if not in_csv:
-                # is fact new (i.e. not already in memory?)
-                if chunk_name not in [chunk.name for chunk in self.dm]:
-                    # add new fact to csv
-                    self._add_to_csv(gap, time)
             # add new fact to memory (or add encounter to already existing memory)
             self.add_encounter(wait_fact)
+            if add_to_csv and (gap, time) not in self.learned_memory:
+                self.learned_memory.append((gap, time))
 
-    def _add_to_csv(self, gap, pulses):
-        if (gap, pulses) in self.learned_memory:
-            print("Gap/pulses combination is already in learned memory, not adding to the csv")
-            return  # Don't add existing fact to learned_memory.csv
-        self.learned_memory.append((gap, pulses))
-        seconds = temporal.pulses_to_time(pulses)
-        # initialise new row for csv
-        row = [gap, seconds, pulses]
-        # Create DataFrame of new row
-        df = pd.DataFrame(row).transpose()
-        df.columns = ['Gap', 'Time (s)', "Pulses"]
-        # add new df to csv
-        with open('data/learned_memory.csv', 'a') as f:
-            df.to_csv(f, mode='a', header=f.tell() == 0, index=False)
+    # append the learned_memory csv
+    def append_learned_memory(self):
+        print("Adding new memories to the learned memories data file.")
+        # only add the memories that weren't in csv yet
+        for i, new_memory in enumerate(self.learned_memory, self.mem_index):
+            gap, pulses = new_memory
+            seconds = temporal.pulses_to_time(pulses)
+            # initialise new row for csv
+            row = [gap, seconds, pulses]
+            # Create DataFrame of new row
+            df = pd.DataFrame(row).transpose()
+            df.columns = ['Gap', 'Time (s)', "Pulses"]
+            # add new df to csv
+            with open('data/learned_memory.csv', 'a') as f:
+                df.to_csv(f, mode='a', header=f.tell() == 0, index=False)
+        added = len(self.learned_memory) - self.mem_index
+        print(f"We added {added} new memories.")
+        # update the memory index so that the newly-added memories will only be added once
+        self.mem_index = len(self.learned_memory) - 1
 
     def _add_goal(self):
         goal_0 = Chunk(name="goal", slots={"type": "game-state", "hand": None, "pile": 0,
