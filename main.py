@@ -43,14 +43,14 @@ async def shuriken_proposed(sid):
 
 
 @sio.event
-def shuriken_vote(sid, vote, player_lowest_card):
+def shuriken_vote(sid, vote):
     if vote == 'no':
         print(f"Player vetoed and denied our shuriken proposal: {vote}")
-        model.set_player_shuriken_response(False, None)
+        model.set_player_shuriken_response(False)
     else:
         # Also update shuriken amount left = shurikens_left - 1 in the next function
-        model.set_player_shuriken_response(True, player_lowest_card)
-        print(f"Player voted yes on our shuriken proposal, their lowest card = {player_lowest_card}")
+        model.set_player_shuriken_response(True)
+        print(f"Player voted yes on our shuriken proposal")
 
 
 # @sio.event
