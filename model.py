@@ -6,7 +6,8 @@ from enums import Success, Actor
 import temporal
 
 
-# None of this is final, the actual cognitive model needs to also be updated in all these functions
+# Written by: I.D.M. Akrum and R. Bijlsma
+# Source code: https://github.com/RuurdBijlsma/mind-server
 
 
 class Model(CognitiveModel):
@@ -24,26 +25,15 @@ class Model(CognitiveModel):
         self.timer = None
         self.wait_time = 0
 
-    # the "main" function of the model which decides all model actions
-
-    async def discard_card(self, card):
-        if card not in self.hand:
-            print("Cannot discard card that is not in models hand!")
-            return
-        self.hand.remove(card)
-        self.update_model_hand(self.hand)
-        self.sio.emit('discard_card', card)
-
+    # the "main" function of the model which decides all model action
     def deliberate(self):
         goal = self.goal
 
         if goal is None:
             raise ValueError("Model has lost track of the game state...")
-            return
 
         if self.lives_left <= 0:
-            print("Unfortunately, we died.")
-            return
+            raise ValueError("Unfortunately, we have no lives left.")
 
         print(f"Start model deliberate with goal:\n {goal}")
 
@@ -98,9 +88,9 @@ class Model(CognitiveModel):
 
         # if a higher card was played than in the model's hand, play those lower cards first
         if hand is not None and hand < pile:
-            print("I've got cards lower than the pile... I should play those first.")
+            print("I've got cards lower than the pile... I should discard those first.")
             if self.timer is None:
-                self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
+                self.timer = Timer(self.get_movement_time(), self.discard_lowest_card)
             return
 
         # Model knows its hand and the deck top card, but does not yet know the gap
@@ -151,6 +141,20 @@ class Model(CognitiveModel):
         await self.sio.emit('play_card', card)
         self.update_top_card(card, Actor.model)
 
+    # model discards lowest card
+    async def discard_lowest_card(self):
+        lowest_card = self.get_lowest_card()
+        await self.discard_card(lowest_card)
+
+    # model discards a card (removed from hand but not added to pile)
+    async def discard_card(self, card):
+        if card not in self.hand:
+            print("Cannot discard card that is not in models hand!")
+            return
+        self.hand.remove(card)
+        self.update_model_hand(self.hand)
+        self.sio.emit('discard_card', card)
+
     # function to process a change in the top card of the pile
     def update_top_card(self, new_top_card, actor):
         print("update_top_card", new_top_card)
@@ -168,12 +172,14 @@ class Model(CognitiveModel):
             # if actor plays a lower card after model just played a card, we lose a life
             if actor == Actor.player and self.goal.slots["success"] is not None \
                     and self.goal.slots["success"][0] == Success.pending:
-                self.life_lost(caused_by_human = True)
+                self.life_lost(caused_by_human=True)
         # set final wait_time to time between card plays
         if self.wait_time > 0:
             self.wait_time = tm.time() - self.wait_time
         self.reset_timer()
-        self.deliberate()
+        # self.deliberate is already called in update_model_hand if the model played
+        if actor != Actor.model:
+            self.deliberate()
 
     def get_top_card(self):
         print("get_top_card", self.deck_top_card)
@@ -189,7 +195,7 @@ class Model(CognitiveModel):
             tm.sleep(0.05)
             self.time += 0.05
 
-    # determine whether the last play was succesful
+    # determine whether the last play was successful
     def determine_success(self, success, hand, pile):
         # if the model played last
         if success[1] == Actor.model:
@@ -203,7 +209,7 @@ class Model(CognitiveModel):
         if success[1] == Actor.player:
             # we lose a life if we still had a lower card than the last played card in hand
             if hand is not None and hand < pile:
-                self.life_lost(caused_by_human = False)
+                self.life_lost(caused_by_human=False)
             else:
                 # we only have cards higher than the last played card, but the gap has changed
                 print("The situation's changed. Recalculating...")
@@ -213,8 +219,7 @@ class Model(CognitiveModel):
     async def set_success(self):
         if self.goal is None:
             raise ValueError("Model has lost track of the game state...")
-            return
-        print("My card was played succesfully.")
+        print("My card was played successfully.")
         self.goal.slots["success"] = (Success.success, Actor.model)
         self.time += 0.05
         self.deliberate()
@@ -241,7 +246,7 @@ class Model(CognitiveModel):
         if success is None:
             raise ValueError("No feedback to process...")
 
-        print(f"Proccessing feedback for waiting {time} pulses for gap {gap}...")
+        print(f"Processing feedback for waiting {time} pulses for gap {gap}...")
 
         # model played a card too early
         if success[0] == Success.early:
@@ -313,7 +318,6 @@ class Model(CognitiveModel):
         # model "sees" change in game-state
         self.set_hand(self.get_lowest_card())
         # Lowest card probably changed, to rethink our decisions
-        # self.temp_play_card_smart()
         self.deliberate()
 
     def new_game(self):

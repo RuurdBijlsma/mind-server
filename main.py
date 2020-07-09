@@ -47,10 +47,10 @@ def shuriken_vote(sid, vote, player_lowest_card):
         print(f"Player voted yes on our shuriken proposal, their lowest card = {player_lowest_card}")
 
 
-@sio.event
-def life_lost(sid, caused_by_human):
-    print(f"Oh no we lost a life, did human do it?" + str(caused_by_human))
-    model.life_lost(caused_by_human)
+# @sio.event
+# def life_lost(sid, caused_by_human):
+#     print(f"Oh no we lost a life, did human do it?" + str(caused_by_human))
+#     model.life_lost(caused_by_human)
 
 
 @sio.event
