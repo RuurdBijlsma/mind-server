@@ -54,7 +54,7 @@ class CognitiveModel(ACTRModel):
 
     def _add_to_csv(self, gap, pulses):
         seconds = temporal.pulses_to_time(pulses)
-        # intialise new row for csv
+        # initialise new row for csv
         row = [gap, seconds, pulses]
         # Create DataFrame of new row
         df = pd.DataFrame(row).transpose()
@@ -72,31 +72,25 @@ class CognitiveModel(ACTRModel):
         self.time += 0.05
 
     def set_pile(self, top_card):
-        # goal should always exist, but check to avoid errors
-        if self.goal is not None:
-            tm.sleep(0.05)
-            self.goal.slots["pile"] = top_card
-            self.time += 0.05
-        else:
-            raise ValueError("Goal does not exist thus cannot be adjusted.")
+        self.check_goal()
+        tm.sleep(0.05)
+        self.goal.slots["pile"] = top_card
+        self.time += 0.05
 
     def set_hand(self, lowest_card):
-        # goal should always exist, but check to avoid errors
-        if self.goal is not None:
-            tm.sleep(0.05)
-            self.goal.slots["hand"] = lowest_card
-            self.time += 0.05
-        else:
-            raise ValueError("Goal does not exist thus cannot be adjusted.")
+        self.check_goal()
+        tm.sleep(0.05)
+        self.goal.slots["hand"] = lowest_card
+        self.time += 0.05
 
     # generates time for the model to perform a movement + randomness
-    # t can be generated with Fitt's Law by is set as 0.1 as mimimum-time, n = 3 by default
+    # t can be generated with Fitt's Law but is set as 0.1 as mimimum-time, n = 3 by default
     def get_movement_time(self, t=0.1, n=3):
         low = t * ((n - 1) / n)
         high = t * ((n + 1) / n)
         # time the actual movement takes
         mt = np.random.uniform(low, high)
-        # time for initiation, preperation, and execution of movement
+        # time for initiation, preparation, and execution of movement
         mt += 0.15
         self.time += mt
         return mt

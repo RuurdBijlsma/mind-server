@@ -45,7 +45,7 @@ def testcase_calcgap():
     # special case hand is 100
     gap2 = m.determine_gap(100, 10)
     m.imaginal = None
-    # anomoly case hand > pile
+    # anomaly case hand > pile
     gap3 = m.determine_gap(10, 14)
     print(gap1, gap2, gap3)
 
@@ -54,16 +54,19 @@ def testcase_deliberate():
     m.deliberate()
 
 
-# Test the different success types
+# Test the success late case
 def testcase_success_late():
     # success.late
     tm.sleep(2)
     m.update_top_card(14, Actor.player)
 
-
+def testcase_shuriken_proposal():
+    response = m.get_shuriken_response()
+    print(f"Model responded with: {response}.")
 testcase_newround()
 # testcase_cardplayed()
 # testcase_waitfacts()
 # testcase_calcgap()
 # testcase_deliberate()
-testcase_success_late()
+# testcase_success_late()
+testcase_shuriken_proposal()

@@ -1,7 +1,7 @@
 from timer import Timer
 import time as tm
+import numpy as np
 from cogmodel import CognitiveModel
-from chunkCog import Chunk
 from enums import Success, Actor
 import temporal
 
@@ -277,10 +277,45 @@ class Model(CognitiveModel):
             return None
         return min(*self.hand)
 
-    # noinspection PyMethodMayBeStatic
-    def get_shuriken_response(self):
+    # function to determine if model accepts a shuriken proposal or not
+    def get_shuriken_response(self, gap_threshold=15):
         print("get_shuriken_response")
-        return True
+        # model's hand is 100 card (always played last)
+        if self.get_lowest_card() == 100:
+            print("The card in my hand is 100, so I don't want to use a shuriken.")
+            return False
+        # can't accept if there are no shuriken
+        if self.shurikens_left == 0:
+            return False
+        self.check_goal()
+        gap = self.goal.slots["gap"]
+        choices = [True, False]
+        p = [0.5, 0.5]  # default 50/50 chance of rejecting or accepting
+        # if gap is None, the lowest card hasn't been processed properly
+        if gap is None:
+            return False
+        # you have more than 1 lives, but only 1 shuriken
+        if self.lives_left > 1 == self.shurikens_left:
+            print(f"I have only 1 shuriken and {self.lives_left} lives.")
+            # the gap is small
+            if gap <= gap_threshold:
+                print(f"The gap is {gap}, which I consider small.")
+                p = [0.1, 0.9]  # high probability of rejecting
+            else:
+                print(f"The gap is {gap}, which I consider big.")
+                p = [0.3, 0.7]  # probability biased towards rejecting
+        # you have 1 (or more) shuriken, but only 1 life
+        if self.lives_left == 1 <= self.shurikens_left:
+            print(f"I have only 1 life and {self.shurikens_left} shuriken.")
+            # the gap is large
+            if gap > gap_threshold:
+                print(f"The gap is {gap}, which I consider big.")
+                p = [0.9, 0.1]  # high probability of accepting
+            else:
+                print(f"The gap is {gap}, which I consider small.")
+                p = [0.7, 0.3]  # probability biased towards accepting
+        print(f"The chance I'll accept the shuriken is {p[0]}.")
+        return np.random.choice(choices, p=p)
 
     # noinspection PyMethodMayBeStatic
     def set_player_shuriken_response(self, response, lowest_card):

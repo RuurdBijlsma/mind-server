@@ -33,6 +33,12 @@ async def shuriken_proposed(sid):
     print(f"Player proposed shuriken")
     # Ask model for response here
     response = model.get_shuriken_response()
+    # if model accepts, lower amount of shurikens_left in model
+    if response:
+        model.shurikens_left -= 1
+        print("Model accepts the shuriken proposal.")
+    else:
+        print("Model rejects the shuriken proposal.")
     await sio.emit('shuriken_vote', response)
 
 
