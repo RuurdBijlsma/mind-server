@@ -26,6 +26,14 @@ class Model(CognitiveModel):
 
     # the "main" function of the model which decides all model actions
 
+    async def discard_card(self, card):
+        if card not in self.hand:
+            print("Cannot discard card that is not in models hand!")
+            return
+        self.hand.remove(card)
+        self.update_model_hand(self.hand)
+        self.sio.emit('discard_card', card)
+
     def deliberate(self):
         goal = self.goal
 

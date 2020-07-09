@@ -7,11 +7,12 @@
 aiohttp==3.6.2            # via -r requirements.in
 async-timeout==3.0.1      # via aiohttp
 attrs==19.3.0             # via aiohttp
-chardet==3.0.4            # via aiohttp
+certifi==2020.6.20        # via requests
+chardet==3.0.4            # via aiohttp, requests
 dnspython==1.16.0         # via eventlet
 eventlet==0.25.2          # via -r requirements.in
 greenlet==0.4.16          # via eventlet
-idna==2.10                # via yarl
+idna==2.10                # via requests, yarl
 monotonic==1.5            # via eventlet
 multidict==4.7.6          # via aiohttp, yarl
 numpy==1.19.0             # via pandas
@@ -20,5 +21,7 @@ python-dateutil==2.8.1    # via pandas
 python-engineio==3.13.1   # via python-socketio
 python-socketio==4.6.0    # via -r requirements.in
 pytz==2020.1              # via pandas
+requests==2.24.0          # via -r requirements.in
 six==1.15.0               # via eventlet, python-dateutil, python-engineio, python-socketio
+urllib3==1.25.9           # via requests
 yarl==1.4.2               # via aiohttp
