@@ -119,16 +119,19 @@ class CognitiveModel(ACTRModel):
             tm.sleep(latency)
             # add time for second retrieval request
             self.time += 0.05 + latency
-            return wait_fact.slots["wait"]
-        return None
+            wait_time = wait_fact.slots["wait"]
+            if wait_time is None:
+                raise LookupError("Model couldn't figure out how long to wait.")
+            return wait_time
 
-    def sep_number(self, n):
+    @staticmethod
+    def sep_number(n):
         tens = int(n / 10)
         ones = n % 10
         return tens, ones
 
     def determine_gap(self, hand, pile):
-        if (hand == 100):
+        if hand == 100:
             # treat 100 as a gap of 1 (play "instantly")
             return 1
 
@@ -199,6 +202,10 @@ class CognitiveModel(ACTRModel):
             return gap_tot
 
         return None
+
+    def check_goal(self):
+        if self.goal is None:
+            raise ValueError("Model has lost track of the game-state.")
 
     def reset_goal(self, partial=False):
         print("model goal reset")

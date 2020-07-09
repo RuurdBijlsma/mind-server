@@ -27,10 +27,8 @@ class Model(CognitiveModel):
 
     # the "main" function of the model which decides all model action
     def deliberate(self):
+        self.check_goal()
         goal = self.goal
-
-        if goal is None:
-            raise ValueError("Model has lost track of the game state...")
 
         if self.lives_left <= 0:
             raise ValueError("Unfortunately, we have no lives left.")
@@ -217,8 +215,7 @@ class Model(CognitiveModel):
 
     # model decides its card was played successfully
     async def set_success(self):
-        if self.goal is None:
-            raise ValueError("Model has lost track of the game state...")
+        self.check_goal()
         print("My card was played successfully.")
         self.goal.slots["success"] = (Success.success, Actor.model)
         self.time += 0.05
@@ -228,21 +225,20 @@ class Model(CognitiveModel):
     def life_lost(self, caused_by_human):
         print("life_lost")
         self.lives_left -= 1
+        self.check_goal()
         # update the model with to the correct situation
-        if self.goal is not None:
-            if caused_by_human:
-                # model played a card too early
-                self.goal.slots["success"] = Success.early, Actor.player
-            else:
-                # model played a card too late
-                self.goal.slots["success"] = Success.late, Actor.model
-            tm.sleep(0.05)
-            self.time += 0.05
+        if caused_by_human:
+            # model played a card too early
+            self.goal.slots["success"] = Success.early, Actor.player
+        else:
+            # model played a card too late
+            self.goal.slots["success"] = Success.late, Actor.model
+        tm.sleep(0.05)
+        self.time += 0.05
 
     # process the feedback from the last card play
     def process_feedback(self, success, gap, time):
-        if self.goal is None:
-            raise ValueError("Lost track of game-state...")
+        self.check_goal()
         if success is None:
             raise ValueError("No feedback to process...")
 
