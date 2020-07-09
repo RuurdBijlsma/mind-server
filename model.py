@@ -354,7 +354,7 @@ class Model(CognitiveModel):
         return np.random.choice(choices, p=p)
 
     # noinspection PyMethodMayBeStatic
-    def set_player_shuriken_response(self, response, lowest_card):
+    def set_player_shuriken_response(self, response):
         print("set_player_shuriken_response")
         pass
 
