@@ -25,6 +25,15 @@ class CognitiveModel(ACTRModel):
         self._add_wait_facts()
         self.load_learned_memory()
 
+    # add gap, pulses from the init_memory file
+    def _add_wait_facts(self):
+        # Get initial times to wait from timing_data csv
+        data = pd.read_csv('data/init_memory.csv', usecols=['Gap', 'Pulses'])
+        array = data.to_numpy()  # data is type numpy.int64 (compatible with int)
+        for gap, time in array:
+            self.add_wait_fact(gap, time)
+
+    # add gap, pulses from learned_memory file
     def load_learned_memory(self):
         if not path.isfile('data/learned_memory.csv'):
             return
@@ -45,15 +54,7 @@ class CognitiveModel(ACTRModel):
                                                          "num1": n1, "num2": n2, "gap": (n1 - n2)}, blc=10)
                 self.add_encounter(gap_fact)
 
-    # Generate chunks for the wait facts and add them to memory
-    def _add_wait_facts(self):
-        # Get initial times to wait from timing_data csv
-        data = pd.read_csv('data/init_memory.csv', usecols=['Gap', 'Pulses'])
-        array = data.to_numpy()  # data is type numpy.int64 (compatible with int)
-        for gap, time in array:
-            self.add_wait_fact(gap, time)
-
-    # Takes gap and time in pulse as arguments then creates a new wait fact in memory
+    # Takes gap and time in pulses as arguments then creates a new wait fact in memory
     def add_wait_fact(self, gap, time, add_to_csv=False):
         if gap is not None and time is not None:
             chunk_name = "g" + str(gap) + "-w" + str(time)
@@ -87,28 +88,8 @@ class CognitiveModel(ACTRModel):
         # update the memory index so that the newly-added memories will only be added once
         self.mem_index = len(self.learned_memory)
 
-    def _add_goal(self):
-        goal_0 = Chunk(name="goal", slots={"type": "game-state", "hand": None, "pile": 0,
-                                           "gap": None, "wait": None, "success": None})
-        tm.sleep(0.05)
-        self.goal = goal_0
-        # setting a goal takes 50 ms
-        self.time += 0.05
-
-    def set_pile(self, top_card):
-        self.check_goal()
-        tm.sleep(0.05)
-        self.goal.slots["pile"] = top_card
-        self.time += 0.05
-
-    def set_hand(self, lowest_card):
-        self.check_goal()
-        tm.sleep(0.05)
-        self.goal.slots["hand"] = lowest_card
-        self.time += 0.05
-
     # generates time for the model to perform a movement + randomness
-    # t can be generated with Fitt's Law but is set as 0.1 as mimimum-time, n = 3 by default
+    # t can be generated with Fitt's Law but is set as 0.1 as minimum-time, n = 3 by default
     def get_movement_time(self, t=0.1, n=3):
         low = t * ((n - 1) / n)
         high = t * ((n + 1) / n)
@@ -119,6 +100,7 @@ class CognitiveModel(ACTRModel):
         self.time += mt
         return mt
 
+    # model retrieves how long it has to wait with a given gap
     def get_wait_time(self, gap):
         blend_pattern = Chunk(name="blend-pattern", slots={"type": "wait-fact", "gap": gap})
         tm.sleep(0.05)
@@ -142,12 +124,14 @@ class CognitiveModel(ACTRModel):
                 raise LookupError("Model couldn't figure out how long to wait.")
             return wait_time
 
+    # separate a number into tens and ones
     @staticmethod
     def sep_number(n):
         tens = int(n / 10)
         ones = n % 10
         return tens, ones
 
+    # model calculates the difference between hand and pile
     def determine_gap(self, hand, pile):
         if hand == 100:
             # treat 100 as a gap of 1 (play "instantly")
@@ -221,15 +205,41 @@ class CognitiveModel(ACTRModel):
 
         return None
 
+    # add goal to model's goal buffer
+    def _add_goal(self):
+        goal_0 = Chunk(name="goal", slots={"type": "game-state", "hand": None, "pile": 0,
+                                           "gap": None, "wait": None, "success": None})
+        tm.sleep(0.05)
+        self.goal = goal_0
+        # setting a goal takes 50 ms
+        self.time += 0.05
+
+    # process change in pile in goal buffer
+    def set_pile(self, top_card):
+        self.check_goal()
+        tm.sleep(0.05)
+        self.goal.slots["pile"] = top_card
+        self.time += 0.05
+
+    # process change in hand in goal buffer
+    def set_hand(self, lowest_card):
+        self.check_goal()
+        tm.sleep(0.05)
+        self.goal.slots["hand"] = lowest_card
+        self.time += 0.05
+
+    # check goal is not None
     def check_goal(self):
         if self.goal is None:
             raise ValueError("Model has lost track of the game-state.")
 
+    # reset goal entirely or partially
     def reset_goal(self, partial=False):
         print("model goal reset")
         # If goal has already been created, reset its slots
         if self.goal is not None:
             tm.sleep(0.05)
+            # also reset the hand and pile
             if not partial:
                 self.goal.slots["hand"] = None
                 self.goal.slots["pile"] = 0
@@ -241,6 +251,7 @@ class CognitiveModel(ACTRModel):
             # if goal chunk does not yet exist, create it
             self._add_goal()
 
+    # reset imaginal buffer
     def reset_imaginal(self):
         if self.imaginal is not None:
             self.imaginal = None
