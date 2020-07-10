@@ -72,7 +72,7 @@ class CognitiveModel(ACTRModel):
             gap, pulses = new_memory
             seconds = temporal.pulses_to_time(pulses)
             # initialise new row for csv
-            row = [gap, seconds, pulses]
+            row = [gap, round(seconds, 3), int(pulses)]
             # Create DataFrame of new row
             df = pd.DataFrame(row).transpose()
             df.columns = ['Gap', 'Time (s)', "Pulses"]

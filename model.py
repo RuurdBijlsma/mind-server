@@ -13,6 +13,7 @@ import temporal
 class Model(CognitiveModel):
     def __init__(self, sio=None):
         super().__init__()
+        # game-state
         self.shurikens_left = -1
         self.lives_left = -1
         self.hand = []
@@ -21,11 +22,12 @@ class Model(CognitiveModel):
         self.reset_game()
         if sio is not None:
             self.sio = sio
-        # Temp
-        self.timer = None
-        self.check_in = None
-        self.discard_timer = None
-        self.wait_time = 0
+        # timers
+        self.timer = None   # for playing a card
+        self.check_in = None    # for checking in after some time
+        self.discard_timer = None   # for discarding a card
+        self.wait_time = 0  # keep track of how long the model's waited real-time
+        self.pause = None   # keep track of how long the model still has to wait in a pause
 
     # the "main" function of the model which decides all model action
     def deliberate(self):
@@ -82,6 +84,14 @@ class Model(CognitiveModel):
         # refrain from doing anything with a 100 card if player still has cards
         if hand == 100 and self.get_player_hand_size() != 0:
             print("Waiting indefinitely, model card = 100")
+            return
+
+        # if you were playing a card, but paused for any reason, continue waiting
+        if self.pause is not None:
+            lowest_card = self.get_lowest_card()
+            print(f"Still waiting {self.pause:.2f} seconds before playing {lowest_card}")
+            self.timer = Timer(self.pause, self.play_lowest_card)
+            self.pause = None
             return
 
         # if a higher card was played than in the model's hand, play those lower cards first
@@ -292,7 +302,7 @@ class Model(CognitiveModel):
                     print("I'll keep waiting.")
                     self.check_in = Timer(long_time, self.check_time)
                 else:
-                    return
+                    print("Waiting on shuriken response from player...")
             else:
                 print("I'll play my card soon.")
 
@@ -304,10 +314,17 @@ class Model(CognitiveModel):
         if propose:
             print("I'll propose a shuriken.")
             await self.sio.emit('propose_shuriken')
+            self.pause_timer(self.timer)
+            self.reset_timer()
             return True
         else:
             print("I won't propose a shuriken.")
             return False
+
+    def pause_timer(self, timer):
+        temp_time = tm.time() - self.wait_time
+        time_diff = timer.get_timeout() - temp_time
+        self.pause = time_diff
 
     def get_lowest_card(self):
         if len(self.hand) == 1:
@@ -358,6 +375,7 @@ class Model(CognitiveModel):
         print("set_player_shuriken_response")
         pass
 
+    # noinspection PyMethodMayBeStatic
     def reveal_player_lowest_card(self, card):
         print("Shuriken reveal player's lowest card", card)
         # Add model stuff here
@@ -410,6 +428,8 @@ class Model(CognitiveModel):
         if self.discard_timer is not None:
             self.discard_timer.cancel()
             self.discard_timer = None
+        if self.pause is not None:
+            self.pause = None
 
     def reset_game(self):
         print("reset_game")
