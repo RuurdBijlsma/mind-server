@@ -61,12 +61,10 @@ def end_round(sid, round):
 
 
 @sio.event
-def life_lost(sid, caused_by_human):
-    print(f"Oh no we lost a life, did human do it?" + str(caused_by_human))
-    # This already gets called by the model itself when a life is lost because of the model
-    # So we only call it when the player caused it
-    if caused_by_human:
-        model.life_lost(caused_by_human)
+def discard_card(sid):
+    print(f"player discarded a card!")
+    # Do same thing as in play_card
+    pass
 
 
 @sio.event
