@@ -162,6 +162,7 @@ class Model(CognitiveModel):
     # Client indicated round has ended, save learned memory for this round
     def end_round(self, round):
         print("Round has ended, save learned memory here", round)
+        self.append_learned_memory()
 
     # model plays its lowest card
     async def play_lowest_card(self):
@@ -191,6 +192,8 @@ class Model(CognitiveModel):
         self.update_model_hand(self.hand)
         await self.sio.emit('discard_card', card)
         print("Discard event sent to client")
+        self.reset_timers()
+        self.deliberate()
 
     # function to process a change in the top card of the pile
     def update_top_card(self, new_top_card, actor):
@@ -471,7 +474,6 @@ class Model(CognitiveModel):
 
     def new_round(self, new_hand):
         print("new_round")
-        self.append_learned_memory()
         self.reset_timers()
         self.reset_round()
         self.update_player_hand_size(len(new_hand))
