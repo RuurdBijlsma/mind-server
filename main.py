@@ -63,8 +63,8 @@ def end_round(sid, round):
 @sio.event
 def discard_card(sid):
     print(f"player discarded a card!")
-    # Do same thing as in play_card
-    pass
+    model.update_player_hand_size(model.get_player_hand_size() - 1)
+    model.discard_player_card()
 
 
 @sio.event
