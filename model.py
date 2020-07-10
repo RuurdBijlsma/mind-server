@@ -19,6 +19,7 @@ class Model(CognitiveModel):
         self.hand = []
         self.player_hand_size = -1
         self.deck_top_card = -1
+        self.using_shuriken = False, None
         self.reset_game()
         if sio is not None:
             self.sio = sio
@@ -84,6 +85,23 @@ class Model(CognitiveModel):
         # refrain from doing anything with a 100 card if player still has cards
         if hand == 100 and self.get_player_hand_size() != 0:
             print("Waiting indefinitely, model card = 100")
+            return
+
+        # if we're in the middle of processing a shuriken
+        if self.using_shuriken[0]:
+            print("We're processing a shuriken right now.")
+            # play cards lower than player card
+            if hand < self.using_shuriken[1]:
+                print("I have a card lower than the player's lowest card, which I'll play.")
+                self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
+            elif pile != self.using_shuriken[1]:
+                print("The player's lowest card is lower than mine.")
+                print("I'll wait for the player to play their lowest card.")
+            else:
+                # reset using_shuriken
+                print("We finished processing the shuriken.")
+                self.using_shuriken = False, None
+                self.deliberate()
             return
 
         # if you were playing a card, but paused for any reason, continue waiting
@@ -197,6 +215,11 @@ class Model(CognitiveModel):
 
     # remember who played the last card and set success of that play to pending
     def set_pending(self, actor):
+        # don't process success of plays during shuriken use
+        if self.using_shuriken[0]:
+            # mark that the situation has changed
+            self.reset_goal(partial=True)
+            return
         if self.goal.slots["success"] is None:
             if actor == Actor.model and self.get_player_hand_size() > 0:
                 self.goal.slots["success"] = (Success.pending, Actor.model)
@@ -383,16 +406,19 @@ class Model(CognitiveModel):
         print(f"The chance I'll propose or accept a shuriken is {p[0]}.")
         return np.random.choice(choices, p=p)
 
-    # noinspection PyMethodMayBeStatic
     def set_player_shuriken_response(self, response):
         print("set_player_shuriken_response")
-        pass
+        if response:
+            self.shurikens_left -= 1
+        else:
+            # if no shuriken will be used, continue deliberating
+            self.deliberate()
 
-    # noinspection PyMethodMayBeStatic
+    # determine how to process shuriken use based on player's lowest card
     def reveal_player_lowest_card(self, card):
         print("Shuriken reveal player's lowest card", card)
-        # Add model stuff here
-        pass
+        self.using_shuriken = True, card
+        self.deliberate()
 
     def add_life(self, amount):
         print("add life")
