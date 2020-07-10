@@ -166,7 +166,7 @@ class CognitiveModel(ACTRModel):
             self.time += 0.2
             self.determine_gap(hand, pile)
 
-        if self.imaginal.slots["gap-tens"] is None and (hand > 10 or pile > 10):
+        if self.imaginal.slots["gap-tens"] is None and (hand >= 10 or pile >= 10):
             # time for production firing
             tm.sleep(0.05)
             self.time += 0.05
