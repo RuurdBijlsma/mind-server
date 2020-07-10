@@ -64,28 +64,14 @@ class Model(CognitiveModel):
             self.deliberate()
             return
 
+        # if you have no lives left (and you've processed feedback from last play), stop playing
         if self.lives_left <= 0:
             print("Unfortunately, we have no lives left.")
             return
 
-        # if player's hand is empty, model plays all its left-over cards
-        if self.get_player_hand_size() == 0:
-            print("Player's hand is empty.")
-            # if model's hand "exists", i.e. it is not empty
-            if self.hand:
-                # if player isn't already in the process of playing a card
-                if self.timer is None:
-                    self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
-                return
-
         # if hand is empty (and latest feedback has been processed), there is nothing left to do
         if len(self.hand) == 0:
             print("our hand is empty, no actions left to do")
-            return
-
-        # refrain from doing anything with a 100 card if player still has cards
-        if hand == 100 and self.get_player_hand_size() != 0:
-            print("Waiting indefinitely, model card = 100")
             return
 
         # if we're in the middle of processing a shuriken
@@ -113,11 +99,26 @@ class Model(CognitiveModel):
             self.pause = None
             return
 
-        # if a higher card was played than in the model's hand, play those lower cards first
+        # if a higher card was played than in the model's hand, discard those lower cards first
         if hand is not None and hand < pile:
             print(f"My card ({hand}) is lower than the pile. I'll discard it before continuing.")
             if self.discard_timer is None:
                 self.discard_timer = Timer(self.get_movement_time(), self.discard_lowest_card)
+            return
+
+        # if player's hand is empty, model plays all its left-over cards
+        if self.get_player_hand_size() == 0:
+            print("Player's hand is empty.")
+            # if model's hand "exists", i.e. it is not empty
+            if self.hand and hand > pile:
+                # if player isn't already in the process of playing a card
+                if self.timer is None:
+                    self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
+                return
+
+        # refrain from doing anything with a 100 card if player still has cards
+        if hand == 100 and self.get_player_hand_size() != 0:
+            print("Waiting indefinitely, model card = 100")
             return
 
         # Model knows its hand and the deck top card, but does not yet know the gap
@@ -188,10 +189,10 @@ class Model(CognitiveModel):
         self.hand.remove(card)
         self.update_model_hand(self.hand)
         await self.sio.emit('discard_card', card)
-        # print("Discard event sent to client")
 
+    # process when a player discards a card
     def discard_player_card(self):
-        # if actor plays a lower card after model just played a card, we lose a life
+        # if player plays a lower card after model just played a card, we lose a life
         if self.goal.slots["success"] is not None \
                 and self.goal.slots["success"][0] == Success.pending:
             self.life_lost(caused_by_human=True)
@@ -210,11 +211,6 @@ class Model(CognitiveModel):
             self.set_pending(actor)
             self.reset_timers()
             self.deliberate()
-        else:
-            if actor == actor.Model:
-                self.life_lost(caused_by_human=False)
-                self.goal.slots["success"] = Success.late, Actor.model
-                self.timer = Timer(self.get_movement_time(), self.discard_lowest_card)
 
     # function returns top card
     def get_top_card(self):
