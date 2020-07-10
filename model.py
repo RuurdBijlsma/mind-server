@@ -188,7 +188,7 @@ class Model(CognitiveModel):
             if actor == Actor.player and self.goal.slots["success"] is not None \
                     and self.goal.slots["success"][0] == Success.pending:
                 self.life_lost(caused_by_human=True)
-        self.reset_timer()
+        self.reset_timers()
         self.deliberate()
 
     def get_top_card(self):
@@ -315,7 +315,7 @@ class Model(CognitiveModel):
             print("I'll propose a shuriken.")
             await self.sio.emit('propose_shuriken')
             self.pause_timer(self.timer)
-            self.reset_timer()
+            self.reset_timers()
             return True
         else:
             print("I won't propose a shuriken.")
@@ -370,6 +370,16 @@ class Model(CognitiveModel):
             else:
                 print(f"The gap is {gap}, which I consider small.")
                 p = [0.7, 0.3]  # probability biased towards accepting
+        # you have the same amount of shuriken and lives
+        if self.lives_left == self.shurikens_left:
+            print(f"I have {self.lives_left} lives and {self.shurikens_left} shuriken.")
+            # the gap is large
+            if gap > gap_threshold:
+                print(f"The gap is {gap}, which I consider big.")
+                p = [0.6, 0.4]  # slight bias towards accepting
+            else:
+                print(f"The gap is {gap}, which I consider small.")
+                p = [0.4, 0.6]  # slight bias toward rejecting
         print(f"The chance I'll propose or accept a shuriken is {p[0]}.")
         return np.random.choice(choices, p=p)
 
@@ -415,13 +425,13 @@ class Model(CognitiveModel):
     def new_round(self, new_hand):
         print("new_round")
         self.append_learned_memory()
-        self.reset_timer()
+        self.reset_timers()
         self.reset_round()
         self.update_player_hand_size(len(new_hand))
         self.update_model_hand(new_hand)
 
-    def reset_timer(self):
-        print("reset_timer")
+    def reset_timers(self):
+        print("reset_timers")
         if self.timer is not None:
             self.timer.cancel()
             self.timer = None

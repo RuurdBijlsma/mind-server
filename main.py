@@ -31,6 +31,8 @@ def update_top_card(sid, number):
 @sio.event
 async def shuriken_proposed(sid):
     print(f"Player proposed shuriken")
+    model.pause_timer(model.timer)
+    model.reset_timers()
     # Ask model for response here
     response = model.get_shuriken_response()
     # if model accepts, lower amount of shurikens_left in model
@@ -39,6 +41,7 @@ async def shuriken_proposed(sid):
         print("Model accepts the shuriken proposal.")
     else:
         print("Model rejects the shuriken proposal.")
+        model.deliberate()
     await sio.emit('shuriken_vote', response)
 
 
@@ -48,15 +51,14 @@ def shuriken_vote(sid, vote):
         print(f"Player vetoed and denied our shuriken proposal: {vote}")
         model.set_player_shuriken_response(False)
     else:
-        # Also update shuriken amount left = shurikens_left - 1 in the next function
         model.set_player_shuriken_response(True)
         print(f"Player voted yes on our shuriken proposal")
 
 
-# @sio.event
-# def life_lost(sid, caused_by_human):
-#     print(f"Oh no we lost a life, did human do it?" + str(caused_by_human))
-#     model.life_lost(caused_by_human)
+@sio.event
+def life_lost(sid, caused_by_human):
+    print(f"Oh no we lost a life, did human do it?" + str(caused_by_human))
+    model.life_lost(caused_by_human)
 
 
 @sio.event
