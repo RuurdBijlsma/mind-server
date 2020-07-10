@@ -42,7 +42,7 @@ async def shuriken_proposed(sid):
     else:
         print("Model rejects the shuriken proposal.")
         model.deliberate()
-    await sio.emit('shuriken_vote', response)
+    await sio.emit('shuriken_vote', 'true' if response else 'false')
 
 
 @sio.event
@@ -56,9 +56,17 @@ def shuriken_vote(sid, vote):
 
 
 @sio.event
+def end_round(sid, round):
+    model.end_round(round)
+
+
+@sio.event
 def life_lost(sid, caused_by_human):
     print(f"Oh no we lost a life, did human do it?" + str(caused_by_human))
-    model.life_lost(caused_by_human)
+    # This already gets called by the model itself when a life is lost because of the model
+    # So we only call it when the player caused it
+    if caused_by_human:
+        model.life_lost(caused_by_human)
 
 
 @sio.event

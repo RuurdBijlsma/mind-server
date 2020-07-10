@@ -24,11 +24,11 @@ class Model(CognitiveModel):
         if sio is not None:
             self.sio = sio
         # timers
-        self.timer = None   # for playing a card
-        self.check_in = None    # for checking in after some time
-        self.discard_timer = None   # for discarding a card
+        self.timer = None  # for playing a card
+        self.check_in = None  # for checking in after some time
+        self.discard_timer = None  # for discarding a card
         self.wait_time = 0  # keep track of how long the model's waited real-time
-        self.pause = None   # keep track of how long the model still has to wait in a pause
+        self.pause = None  # keep track of how long the model still has to wait in a pause
 
     # the "main" function of the model which decides all model action
     def deliberate(self):
@@ -158,6 +158,10 @@ class Model(CognitiveModel):
             return
 
         print("I don't know what to do...")
+
+    # Client indicated round has ended, save learned memory for this round
+    def end_round(self, round):
+        print("Round has ended, save learned memory here", round)
 
     # model plays its lowest card
     async def play_lowest_card(self):
