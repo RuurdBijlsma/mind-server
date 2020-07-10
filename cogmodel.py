@@ -31,7 +31,7 @@ class CognitiveModel(ACTRModel):
         data = pd.read_csv('data/learned_memory.csv', usecols=['Gap', 'Pulses'])
         array = data.to_numpy()
         self.learned_memory = [(gap, pulses) for [gap, pulses] in array]
-        self.mem_index = len(self.learned_memory) - 1
+        self.mem_index = len(self.learned_memory)
         print("loaded learned memory")
         # for gap, time in array:
         #     self.add_wait_fact(gap, time)
@@ -66,6 +66,9 @@ class CognitiveModel(ACTRModel):
 
     # append the learned_memory csv
     def append_learned_memory(self):
+        if len(self.learned_memory) <= self.mem_index:
+            print("No new memories to add.")
+            return
         print("Adding new memories to the learned memories data file.")
         # only add the memories that weren't in csv yet
         for i, new_memory in enumerate(self.learned_memory, self.mem_index):
@@ -82,7 +85,7 @@ class CognitiveModel(ACTRModel):
         added = len(self.learned_memory) - self.mem_index
         print(f"We added {added} new memories.")
         # update the memory index so that the newly-added memories will only be added once
-        self.mem_index = len(self.learned_memory) - 1
+        self.mem_index = len(self.learned_memory)
 
     def _add_goal(self):
         goal_0 = Chunk(name="goal", slots={"type": "game-state", "hand": None, "pile": 0,

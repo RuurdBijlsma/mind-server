@@ -60,9 +60,12 @@ def testcase_success_late():
     tm.sleep(2)
     m.update_top_card(14, Actor.player)
 
+
 def testcase_shuriken_proposal():
     response = m.get_shuriken_response()
     print(f"Model responded with: {response}.")
+
+
 testcase_newround()
 # testcase_cardplayed()
 # testcase_waitfacts()

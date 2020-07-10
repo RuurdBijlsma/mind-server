@@ -321,9 +321,12 @@ class Model(CognitiveModel):
             print("I won't propose a shuriken.")
             return False
 
+    # pause timer and set self.pause to remaining time on timer
     def pause_timer(self, timer):
         temp_time = tm.time() - self.wait_time
         time_diff = timer.get_timeout() - temp_time
+        if time_diff <= 0:
+            raise ValueError("Unable to pause on-going timer.")
         self.pause = time_diff
 
     def get_lowest_card(self):
