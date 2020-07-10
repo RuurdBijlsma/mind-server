@@ -377,7 +377,7 @@ class Model(CognitiveModel):
         if self.lives_left > 1 == self.shurikens_left:
             print(f"I have only 1 shuriken and {self.lives_left} lives.")
             # the gap is small
-            if gap <= gap_threshold:
+            if gap < gap_threshold:
                 print(f"The gap is {gap}, which I consider small.")
                 p = [0.1, 0.9]  # high probability of rejecting
             else:
@@ -387,7 +387,7 @@ class Model(CognitiveModel):
         if self.lives_left == 1 <= self.shurikens_left:
             print(f"I have only 1 life and {self.shurikens_left} shuriken.")
             # the gap is large
-            if gap > gap_threshold:
+            if gap >= gap_threshold:
                 print(f"The gap is {gap}, which I consider big.")
                 p = [0.9, 0.1]  # high probability of accepting
             else:
@@ -397,7 +397,7 @@ class Model(CognitiveModel):
         if self.lives_left == self.shurikens_left:
             print(f"I have {self.lives_left} lives and {self.shurikens_left} shuriken.")
             # the gap is large
-            if gap > gap_threshold:
+            if gap >= gap_threshold:
                 print(f"The gap is {gap}, which I consider big.")
                 p = [0.6, 0.4]  # slight bias towards accepting
             else:
