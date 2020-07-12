@@ -39,6 +39,7 @@ async def shuriken_proposed(sid):
     if response:
         model.shurikens_left -= 1
         print("Model accepts the shuriken proposal.")
+        model.pause = None
     else:
         print("Model rejects the shuriken proposal.")
         model.deliberate()

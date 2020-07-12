@@ -493,8 +493,6 @@ class Model(CognitiveModel):
         if self.discard_timer is not None:
             self.discard_timer.cancel()
             self.discard_timer = None
-        if self.pause is not None:
-            self.pause = None
 
     def reset_game(self):
         print("reset_game")
