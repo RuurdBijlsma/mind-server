@@ -181,20 +181,24 @@ class Model(CognitiveModel):
         await self.sio.emit('play_card', card)
         self.update_top_card(card, Actor.model)
 
-    # model discards lowest card
+    async def shuriken_discard_lowest_card(self):
+        lowest_card = self.get_lowest_card()
+        await self.discard_card(lowest_card, True)
+
+    # model discards lowest cardA
     async def discard_lowest_card(self):
         lowest_card = self.get_lowest_card()
         await self.discard_card(lowest_card)
 
     # model discards a card (removed from hand but not added to pile)
-    async def discard_card(self, card):
+    async def discard_card(self, card, shuriken=False):
         if card not in self.hand:
             print("Cannot discard card that is not in models hand!")
             return
         print(f"Discarding {card}.")
         self.hand.remove(card)
         self.update_model_hand(self.hand)
-        await self.sio.emit('discard_card', card)
+        await self.sio.emit('discard_card', card, shuriken)
 
     # process when a player discards a card
     def discard_player_card(self):
@@ -455,7 +459,7 @@ class Model(CognitiveModel):
         print("Shuriken reveal player's lowest card", card)
         self.using_shuriken = True, card
         print("I need to discard my lowest card", self.get_lowest_card())
-        self.discard_timer = Timer(self.get_movement_time(), self.discard_lowest_card)
+        self.discard_timer = Timer(self.get_movement_time(), self.shuriken_discard_lowest_card)
         # self.deliberate()
 
     # add one or more lives to the model
