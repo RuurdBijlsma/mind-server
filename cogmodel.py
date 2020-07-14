@@ -23,6 +23,8 @@ class CognitiveModel(ACTRModel):
     def _init_memory(self):
         self._add_gap_facts()
         self._add_wait_facts()
+        # add variable include_learned=False if you don't want learned memories
+        # added to the model's memory
         self.load_learned_memory()
 
     # add gap, pulses from the init_memory file
@@ -34,16 +36,17 @@ class CognitiveModel(ACTRModel):
             self.add_wait_fact(gap, time)
 
     # add gap, pulses from learned_memory file
-    def load_learned_memory(self):
+    def load_learned_memory(self, include_learned=True):
         if not path.isfile('data/learned_memory.csv'):
             return
         data = pd.read_csv('data/learned_memory.csv', usecols=['Gap', 'Pulses'])
         array = data.to_numpy()
         self.learned_memory = [(gap, pulses) for [gap, pulses] in array]
         self.mem_index = len(self.learned_memory)
+        if include_learned:
+            for gap, time in array:
+                self.add_wait_fact(gap, time)
         print("loaded learned memory")
-        # for gap, time in array:
-        #     self.add_wait_fact(gap, time)
 
     # Generate chunks for the gap facts and add them to memory
     def _add_gap_facts(self):
