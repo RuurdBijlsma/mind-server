@@ -67,13 +67,17 @@ class Model(CognitiveModel):
         # if you have no lives left (and you've processed feedback from last play), stop playing
         if self.lives_left <= 0:
             print("Unfortunately, we have no lives left.")
+            self.append_learned_memory()
             return
 
         # if we're in the middle of processing a shuriken
         if self.using_shuriken[0]:
             print("We're processing a shuriken right now.")
+            # model is still discarding its lowest card
+            if self.discard_timer is not None:
+                return
             # play cards lower than player card
-            if hand < self.using_shuriken[1]:
+            if hand is not None and hand < self.using_shuriken[1]:
                 print(f"I know my card ({hand}) is lower than the player's lowest card ({self.using_shuriken[1]}).")
                 print(f"I'll play {hand} immediately.")
                 self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
@@ -194,10 +198,11 @@ class Model(CognitiveModel):
 
     # process when a player discards a card
     def discard_player_card(self):
-        # if player plays a lower card after model just played a card, we lose a life
+        # if player discards a lower card after model just played a card, we lose a life
         if self.goal.slots["success"] is not None \
                 and self.goal.slots["success"][0] == Success.pending:
             self.life_lost(caused_by_human=True)
+            self.reset_timers()
         # if we're using a shuriken
         if self.using_shuriken[0]:
             # if the player's lowest card is lower than ours
@@ -205,7 +210,7 @@ class Model(CognitiveModel):
                 print("The player's lowest card was lower than mine.")
                 # we finished processing the shuriken
                 self.using_shuriken = False, None
-        self.reset_timers()
+        # self.reset_timers()
         self.deliberate()
 
     # function to process a change in the top card of the pile
@@ -435,6 +440,7 @@ class Model(CognitiveModel):
         print("set_player_shuriken_response")
         if response:
             self.shurikens_left -= 1
+            self.pause = None
         else:
             # if no shuriken will be used, continue deliberating
             self.deliberate()
@@ -443,7 +449,7 @@ class Model(CognitiveModel):
     def reveal_player_lowest_card(self, card):
         print("Shuriken reveal player's lowest card", card)
         self.using_shuriken = True, card
-        print("I'll discard my lowest card", self.get_lowest_card())
+        print("I need to discard my lowest card", self.get_lowest_card())
         self.discard_timer = Timer(self.get_movement_time(), self.discard_lowest_card)
         # self.deliberate()
 
@@ -473,6 +479,7 @@ class Model(CognitiveModel):
         self.hand = new_hand
         # model "sees" change in game-state
         self.set_hand(self.get_lowest_card())
+        self.reset_goal(partial=True)
         # Lowest card probably changed, to rethink our decisions
         self.reset_timers()
         self.deliberate()
