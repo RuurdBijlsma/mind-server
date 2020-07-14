@@ -181,11 +181,12 @@ class Model(CognitiveModel):
         await self.sio.emit('play_card', card)
         self.update_top_card(card, Actor.model)
 
+    # shuriken was activated so model discards lowest card, this doesn't lose a life
     async def shuriken_discard_lowest_card(self):
         lowest_card = self.get_lowest_card()
         await self.discard_card(lowest_card, True)
 
-    # model discards lowest cardA
+    # model discards lowest card
     async def discard_lowest_card(self):
         lowest_card = self.get_lowest_card()
         await self.discard_card(lowest_card)
