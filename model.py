@@ -374,10 +374,14 @@ class Model(CognitiveModel):
 
     # pause timer and set self.pause to remaining time on timer
     def pause_timer(self, timer):
+        if timer is None:
+            print("No timer to pause.")
+            return
         temp_time = tm.time() - self.wait_time
         time_diff = timer.get_timeout() - temp_time
         if time_diff <= 0:
-            raise ValueError("Unable to pause on-going timer.")
+            print("Unable to pause on-going timer.")
+            return
         self.pause = time_diff
 
     # return the model's lowest card
@@ -401,6 +405,7 @@ class Model(CognitiveModel):
         p = [0.5, 0.5]  # default 50/50 chance of rejecting or accepting
         # if gap is None, the model's lowest card hasn't been processed properly
         if gap is None:
+            print("Things changed too fast. I need more time to think.")
             return False
         # you have more than 1 lives, but only 1 shuriken
         if self.lives_left > 1 == self.shurikens_left:
