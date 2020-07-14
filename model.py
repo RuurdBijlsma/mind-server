@@ -183,8 +183,9 @@ class Model(CognitiveModel):
 
     # shuriken was activated so model discards lowest card, this doesn't lose a life
     async def shuriken_discard_lowest_card(self):
+        print("Discard card through shuriken!")
         lowest_card = self.get_lowest_card()
-        await self.discard_card(lowest_card, True)
+        await self.discard_card(lowest_card, shuriken=True)
 
     # model discards lowest card
     async def discard_lowest_card(self):
@@ -199,7 +200,10 @@ class Model(CognitiveModel):
         print(f"Discarding {card}.")
         self.hand.remove(card)
         self.update_model_hand(self.hand)
-        await self.sio.emit('discard_card', card, shuriken)
+        if shuriken:
+            await self.sio.emit('shuriken_discard_card', card)
+        else:
+            await self.sio.emit('discard_card', card)
 
     # process when a player discards a card
     def discard_player_card(self):
