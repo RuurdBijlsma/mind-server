@@ -1,4 +1,4 @@
-from src.timer import Timer
+from timer import Timer
 import time as tm
 import numpy as np
 from cogmodel import CognitiveModel
