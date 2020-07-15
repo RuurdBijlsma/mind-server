@@ -1,5 +1,4 @@
 from model import Model
-from cogmodel import CognitiveModel
 import temporal
 import time as tm
 from enums import Actor

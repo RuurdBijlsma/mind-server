@@ -5,7 +5,6 @@ import time as tm
 import pandas as pd
 import numpy as np
 from os import path
-import os
 
 
 # The cognitive part of the game's model
@@ -30,16 +29,16 @@ class CognitiveModel(ACTRModel):
     # add gap, pulses from the init_memory file
     def _add_wait_facts(self):
         # Get initial times to wait from timing_data csv
-        data = pd.read_csv('data/init_memory.csv', usecols=['Gap', 'Pulses'])
+        data = pd.read_csv('../data/init_memory.csv', usecols=['Gap', 'Pulses'])
         array = data.to_numpy()  # data is type numpy.int64 (compatible with int)
         for gap, time in array:
             self.add_wait_fact(gap, time)
 
     # add gap, pulses from learned_memory file
     def load_learned_memory(self, include_learned=True):
-        if not path.isfile('data/learned_memory.csv'):
+        if not path.isfile('../data/learned_memory.csv'):
             return
-        data = pd.read_csv('data/learned_memory.csv', usecols=['Gap', 'Pulses'])
+        data = pd.read_csv('../data/learned_memory.csv', usecols=['Gap', 'Pulses'])
         array = data.to_numpy()
         self.learned_memory = [(gap, pulses) for [gap, pulses] in array]
         self.mem_index = len(self.learned_memory)
@@ -84,7 +83,7 @@ class CognitiveModel(ACTRModel):
             df = pd.DataFrame(row).transpose()
             df.columns = ['Gap', 'Time (s)', "Pulses"]
             # add new df to csv
-            with open('data/learned_memory.csv', 'a') as f:
+            with open('../data/learned_memory.csv', 'a') as f:
                 df.to_csv(f, mode='a', header=f.tell() == 0, index=False)
         added = len(self.learned_memory) - self.mem_index
         print(f"We added {added} new memories.")
