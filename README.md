@@ -1,5 +1,6 @@
 # mind-server
-Client is at https://github.com/ruurdbijlsma/mind-client
+Client source code: https://github.com/ruurdbijlsma/mind-client
+Client live app: https://ruurd.dev/mind
 
 ## Requirements
 * Python3
