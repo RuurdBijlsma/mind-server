@@ -1,6 +1,4 @@
-import requests
 import socketio
-import eventlet
 from aiohttp import web
 from model import Model
 from enums import Actor
