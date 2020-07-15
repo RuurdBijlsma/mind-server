@@ -210,9 +210,10 @@ class Model(CognitiveModel):
 
     # process when a player discards a card
     def discard_player_card(self):
+        success = self.goal.slots["success"]
         # if player discards a lower card after model just played a card, we lose a life
-        if self.goal.slots["success"] is not None \
-                and self.goal.slots["success"][0] == Success.pending:
+        if success is not None \
+                and success[0] == Success.pending and success[1] == Actor.model:
             self.life_lost(caused_by_human=True)
             self.reset_timers()
         # if we're using a shuriken
@@ -238,6 +239,15 @@ class Model(CognitiveModel):
             self.set_pending(actor)
             self.reset_timers()
             self.deliberate()
+            # if the player just played
+            if actor == Actor.player:
+                # if the last play's success has not been processed properly but a mistake is made
+                if self.goal.slots["success"] is not None and new_top_card > self.get_lowest_card():
+                    # register the lost life
+                    self.life_lost(caused_by_human=False)
+                    # discard the lowest card
+                    if self.discard_timer is None:
+                        self.discard_timer = Timer(self.get_movement_time(), self.discard_lowest_card)
 
     # function returns top card
     def get_top_card(self):
@@ -263,8 +273,6 @@ class Model(CognitiveModel):
                 self.goal.slots["success"] = (Success.pending, Actor.player)
                 self.wait_time = tm.time() - self.wait_time
                 print(f"We were waiting {self.wait_time:.2f} s when player played a card.")
-            tm.sleep(0.05)
-            self.time += 0.05
         elif self.goal.slots["success"] == (Success.pending, Actor.model) \
                 and self.timer is not None:
             # if we're waiting to see whether our card was successful and player plays a card
@@ -272,8 +280,8 @@ class Model(CognitiveModel):
             self.timer.cancel()
             self.timer = None
             self.goal.slots["success"] = Success.success, Actor.model
-            tm.sleep(0.05)
-            self.time += 0.05
+        tm.sleep(0.05)
+        self.time += 0.05
 
     # determine whether the last play was successful
     def determine_success(self, success, hand, pile):
