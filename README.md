@@ -14,4 +14,7 @@ pip install -r requirements.txt
 ```
 
 ## Running the server
-`python main.py`
+```
+cd src
+python main.py
+```
