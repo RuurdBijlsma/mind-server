@@ -174,6 +174,9 @@ class Model(CognitiveModel):
 
     # model plays a card
     async def play_card(self, card):
+        if card not in self.hand:
+            print("Cannot play card that is not in model's hand!")
+            return
         print("play_card", card)
         self.hand.remove(card)
         # model "sees" change in game-state
@@ -195,7 +198,7 @@ class Model(CognitiveModel):
     # model discards a card (removed from hand but not added to pile)
     async def discard_card(self, card, shuriken=False):
         if card not in self.hand:
-            print("Cannot discard card that is not in models hand!")
+            print("Cannot discard card that is not in model's hand!")
             return
         print(f"Discarding {card}.")
         self.hand.remove(card)
@@ -214,8 +217,9 @@ class Model(CognitiveModel):
             self.reset_timers()
         # if we're using a shuriken
         if self.using_shuriken[0]:
+            lowest_card = self.get_lowest_card()
             # if the player's lowest card is lower than ours
-            if self.get_lowest_card() > self.using_shuriken[1]:
+            if lowest_card is not None and lowest_card > self.using_shuriken[1]:
                 print("The player's lowest card was lower than mine.")
                 # we finished processing the shuriken
                 self.using_shuriken = False, None
@@ -266,6 +270,7 @@ class Model(CognitiveModel):
             # if we're waiting to see whether our card was successful and player plays a card
             # mark our card as successful
             self.timer.cancel()
+            self.timer = None
             self.goal.slots["success"] = Success.success, Actor.model
             tm.sleep(0.05)
             self.time += 0.05
@@ -285,7 +290,7 @@ class Model(CognitiveModel):
             # we lose a life if we still had a lower card than the last played card in hand
             if hand is not None and hand < pile:
                 self.life_lost(caused_by_human=False)
-                self.timer = Timer(self.get_movement_time(), self.discard_lowest_card)
+                self.discard_timer = Timer(self.get_movement_time(), self.discard_lowest_card)
             else:
                 # we only have cards higher than the last played card, but the gap has changed
                 print("The situation's changed. Recalculating...")
@@ -294,9 +299,11 @@ class Model(CognitiveModel):
     # model decides its card was played successfully
     async def set_success(self):
         self.check_goal()
-        print("My card was played successfully.")
-        self.goal.slots["success"] = (Success.success, Actor.model)
-        self.time += 0.05
+        success = self.goal.slots["success"]
+        if success is not None and success == Success.pending:
+            print("My card was played successfully.")
+            self.goal.slots["success"] = (Success.success, Actor.model)
+            self.time += 0.05
         self.deliberate()
 
     # process when a life is lost
