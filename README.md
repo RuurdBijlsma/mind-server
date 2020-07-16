@@ -19,3 +19,8 @@ pip install -r requirements.txt
 cd src
 python main.py
 ```
+
+## Playing the game
+1. Run the server
+2. Go to https://ruurd.dev/mind
+3. Click "Play the game" to play the game!
