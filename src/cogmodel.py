@@ -86,7 +86,7 @@ class CognitiveModel(ACTRModel):
             with open('../data/learned_memory.csv', 'a') as f:
                 df.to_csv(f, mode='a', header=f.tell() == 0, index=False)
         added = len(self.learned_memory) - self.mem_index
-        print(f"We added {added} new memories.")
+        print(f"I added {added} new memories.")
         # update the memory index so that the newly-added memories will only be added once
         self.mem_index = len(self.learned_memory)
 
@@ -123,7 +123,7 @@ class CognitiveModel(ACTRModel):
             self.time += 0.05 + latency
             wait_time = wait_fact.slots["wait"]
             if wait_time is None:
-                raise LookupError("Model couldn't figure out how long to wait.")
+                raise LookupError("I couldn't figure out how long to wait.")
             return wait_time
 
     # separate a number into tens and ones
@@ -233,7 +233,7 @@ class CognitiveModel(ACTRModel):
     # check goal is not None
     def check_goal(self):
         if self.goal is None:
-            raise ValueError("Model has lost track of the game-state.")
+            raise ValueError("I've lost track of the game-state.")
 
     # reset goal entirely or partially
     def reset_goal(self, partial=False):

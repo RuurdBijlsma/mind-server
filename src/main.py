@@ -13,7 +13,7 @@ model = Model(sio)
 
 @sio.event
 def card_played(sid, number):
-    print(f"Player played card(s) {number}")
+    print(f"Player played card(s) {number}.")
     model.update_player_hand_size(model.get_player_hand_size() - 1)
     # player can play more than one card when shuriken is played for example, or when they have consecutive cards
     # In this card only regard the top card
@@ -28,7 +28,7 @@ def update_top_card(sid, number):
 
 @sio.event
 async def shuriken_proposed(sid):
-    print(f"Player proposed shuriken")
+    print(f"Player proposed shuriken.")
     model.pause_timer(model.timer)
     model.reset_timers()
     # Ask model for response here
@@ -36,10 +36,10 @@ async def shuriken_proposed(sid):
     # if model accepts, lower amount of shurikens_left in model
     if response:
         model.shurikens_left -= 1
-        print("Model accepts the shuriken proposal.")
+        print("I accept the player's shuriken proposal.")
         model.pause = None
     else:
-        print("Model rejects the shuriken proposal.")
+        print("I reject the player's shuriken proposal.")
         model.deliberate()
     await sio.emit('shuriken_vote', 'true' if response else 'false')
 
@@ -47,11 +47,11 @@ async def shuriken_proposed(sid):
 @sio.event
 def shuriken_vote(sid, vote):
     if vote == 'no':
-        print(f"Player vetoed and denied our shuriken proposal: {vote}")
+        print(f"Player vetoed and denied my shuriken proposal: {vote}.")
         model.set_player_shuriken_response(False)
     else:
         model.set_player_shuriken_response(True)
-        print(f"Player voted yes on our shuriken proposal")
+        print(f"Player voted yes on my shuriken proposal.")
 
 
 @sio.event

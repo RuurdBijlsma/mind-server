@@ -8,6 +8,7 @@ import temporal
 
 # Written by: I.D.M. Akrum and R. Bijlsma
 # Source code: https://github.com/RuurdBijlsma/mind-server
+# Server connects to client found at https://ruurd.dev/mind/#/
 
 
 class Model(CognitiveModel):
@@ -35,7 +36,7 @@ class Model(CognitiveModel):
         self.check_goal()
         goal = self.goal
 
-        print(f"Start model deliberate with goal:\n {goal}")
+        print(f"I'm deliberating about what to do next.")
 
         # add time for production to fire
         tm.sleep(0.05)
@@ -50,7 +51,7 @@ class Model(CognitiveModel):
 
         # process last play 
         if success is not None and success[0] == Success.pending:
-            print("Evaluating last card played...")
+            print("I'm evaluating the last played card...")
             self.determine_success(success, hand, pile)
             if self.timer is None:
                 self.deliberate()
@@ -58,7 +59,6 @@ class Model(CognitiveModel):
 
         # process feedback from last play
         if success is not None and success[0] != Success.pending:
-            print(f"Processing feedback from {success}...")
             self.process_feedback(success, gap, wait)
             self.reset_goal(partial=True)
             self.deliberate()
@@ -91,13 +91,13 @@ class Model(CognitiveModel):
 
         # if hand is empty (and latest feedback has been processed), there is nothing left to do
         if len(self.hand) == 0:
-            print("our hand is empty, no actions left to do")
+            print("My hand is empty. There's nothing left for me to do.")
             return
 
         # if you were playing a card, but paused for any reason, continue waiting
         if self.pause is not None:
             lowest_card = self.get_lowest_card()
-            print(f"Still waiting {self.pause:.2f} seconds before playing {lowest_card}")
+            print(f"Still waiting {self.pause:.2f} seconds before playing {lowest_card}.")
             self.timer = Timer(self.pause, self.play_lowest_card)
             self.pause = None
             return
@@ -111,7 +111,7 @@ class Model(CognitiveModel):
 
         # if player's hand is empty, model plays all its left-over cards
         if self.get_player_hand_size() == 0:
-            print("Player's hand is empty.")
+            print("The player's hand is empty.")
             # if model's hand "exists", i.e. it is not empty
             if self.hand and hand > pile:
                 # if player isn't already in the process of playing a card
@@ -121,14 +121,14 @@ class Model(CognitiveModel):
 
         # refrain from doing anything with a 100 card if player still has cards
         if hand == 100 and self.get_player_hand_size() != 0:
-            print("Waiting indefinitely, model card = 100")
+            print("My card is 100, so I'll wait till the player is out of cards.")
             return
 
         # Model knows its hand and the deck top card, but does not yet know the gap
         if hand is not None and gap is None:
             new_gap = self.determine_gap(hand, pile)
             self.goal.slots["gap"] = new_gap
-            print(f"calculating difference between {hand} and {pile}...", "calculated gap is", new_gap)
+            print(f"I'm calculating the difference between {hand} and {pile}...", "the calculated gap is", new_gap)
             # add time for modifying goal buffer
             tm.sleep(0.05)
             self.time += 0.05
@@ -144,7 +144,7 @@ class Model(CognitiveModel):
                 self.goal.slots["wait"] = temporal.time_to_pulses(self.get_movement_time())
             else:
                 # decide how long to wait
-                print(f"deciding how long to wait with a gap of {gap}")
+                print(f"I'm deciding how long to wait with a gap of {gap}.")
                 pulses = self.get_wait_time(gap)
                 self.goal.slots["wait"] = pulses
             # add time for modifying goal buffer
@@ -272,12 +272,12 @@ class Model(CognitiveModel):
             if actor == Actor.model and self.get_player_hand_size() > 0:
                 self.goal.slots["success"] = (Success.pending, Actor.model)
                 self.wait_time = tm.time() - self.wait_time
-                print(f"We waited {self.wait_time:.2f} s to play the card.")
+                print(f"I waited {self.wait_time:.2f} s to play the card.")
             # actor just played and we still have cards
             if actor == Actor.player and self.hand:
                 self.goal.slots["success"] = (Success.pending, Actor.player)
                 self.wait_time = tm.time() - self.wait_time
-                print(f"We were waiting {self.wait_time:.2f} s when player played a card.")
+                print(f"I was waiting {self.wait_time:.2f} s when the player played a card.")
         elif self.goal.slots["success"] == (Success.pending, Actor.model) \
                 and self.timer is not None:
             # if we're waiting to see whether our card was successful and player plays a card
@@ -338,10 +338,10 @@ class Model(CognitiveModel):
     def process_feedback(self, success, gap, time):
         self.check_goal()
         if success is None or gap is None or time is None:
-            print("Can't process feedback.")
+            print("I'm missing some information and can't process the feedback.")
             return
 
-        print(f"Processing feedback for waiting {time} pulses for gap {gap}...")
+        print(f"I'm processing feedback for waiting {time} pulses for gap {gap}...")
 
         # model played a card too early
         if success[0] == Success.early:
@@ -387,7 +387,7 @@ class Model(CognitiveModel):
     # propose to use a shuriken
     async def propose_shuriken(self):
         if self.timer is None or self.wait_time == 0:
-            raise ValueError("We aren't waiting to play a card.")
+            raise ValueError("The model wasn't waiting to play a card, so a shuriken couldn't be proposed.")
         # same rules for proposing a shuriken apply as for responding to shuriken proposal
         propose = self.get_shuriken_response()
         if propose:
@@ -481,7 +481,7 @@ class Model(CognitiveModel):
 
     # set using shuriken as true as save the player's lowest card
     def reveal_player_lowest_card(self, card):
-        print("Shuriken reveal player's lowest card", card)
+        print("Shuriken reveals player's lowest card", card)
         self.using_shuriken = True, card
         print("I need to discard my lowest card", self.get_lowest_card())
         self.discard_timer = Timer(self.get_movement_time(), self.shuriken_discard_lowest_card)
