@@ -141,9 +141,15 @@ class Model(CognitiveModel):
 
         # Model knows the gap but does not know how long to wait
         if gap is not None and wait is None:
-            print(f"deciding how long to wait with a gap of {gap}")
-            pulses = self.get_wait_time(gap)
-            self.goal.slots["wait"] = pulses
+            # play immediately (with randomness) with a gap of 1
+            if gap == 1:
+                print("The gap is only 1, I'll play my card immediately.")
+                self.goal.slots["wait"] = temporal.time_to_pulses(self.get_movement_time())
+            else:
+                # decide how long to wait
+                print(f"deciding how long to wait with a gap of {gap}")
+                pulses = self.get_wait_time(gap)
+                self.goal.slots["wait"] = pulses
             # add time for modifying goal buffer
             tm.sleep(0.05)
             self.time += 0.05
@@ -238,16 +244,18 @@ class Model(CognitiveModel):
             # flag that a change in top card means a change in model success
             self.set_pending(actor)
             self.reset_timers()
-            self.deliberate()
+            lowest_card = self.get_lowest_card()
             # if the player just played
             if actor == Actor.player:
                 # if the last play's success has not been processed properly but a mistake is made
-                if self.goal.slots["success"] is not None and new_top_card > self.get_lowest_card():
+                if self.goal.slots["success"] is not None \
+                        and lowest_card is not None and new_top_card > lowest_card:
                     # register the lost life
                     self.life_lost(caused_by_human=False)
                     # discard the lowest card
                     if self.discard_timer is None:
                         self.discard_timer = Timer(self.get_movement_time(), self.discard_lowest_card)
+            self.deliberate()
 
     # function returns top card
     def get_top_card(self):
@@ -288,7 +296,7 @@ class Model(CognitiveModel):
         # if the model played last
         if success[1] == Actor.model:
             if self.timer is None:
-                wait = 5 + 0.05
+                wait = 4 + 0.05
                 print(f"Giving player {wait} seconds to object to my card.")
                 self.timer = Timer(wait, self.set_success)
             else:
@@ -341,14 +349,14 @@ class Model(CognitiveModel):
         # model played a card too early
         if success[0] == Success.early:
             # set new time as 15% later than the model played (and a life was lost)
-            new_time = time + (time * 0.15)
+            new_time = time + (time * 0.20)
             self.add_wait_fact(gap, new_time)
             print(f"I should have waited longer; I will try waiting {new_time} for gap {gap}.")
 
         # model played a card too late
         if success[0] == Success.late:
             # set new time as 15% earlier than that the player played (and a life was lost)
-            new_time = self.wait_time - (self.wait_time * 0.15)
+            new_time = self.wait_time - (self.wait_time * 0.20)
             new_time = temporal.time_to_pulses(new_time)
             self.add_wait_fact(gap, new_time)
             print(f"I should have played sooner; I will try waiting {new_time} for gap {gap}.")
