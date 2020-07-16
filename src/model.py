@@ -81,9 +81,6 @@ class Model(CognitiveModel):
                 print(f"I know my card ({hand}) is lower than the player's lowest card ({self.using_shuriken[1]}).")
                 print(f"I'll play {hand} immediately.")
                 self.timer = Timer(self.get_movement_time(), self.play_lowest_card)
-            # elif pile != self.using_shuriken[1]:
-            #     print("The player's lowest card is lower than mine.")
-            #     print("I'll wait for the player to play their lowest card.")
             else:
                 # reset using_shuriken
                 print("I don't have any cards lower than the player's lowest card.")
@@ -107,8 +104,8 @@ class Model(CognitiveModel):
 
         # if a higher card was played than in the model's hand, discard those lower cards first
         if hand is not None and hand < pile:
-            print(f"My card ({hand}) is lower than the pile. I'll discard it before continuing.")
             if self.discard_timer is None:
+                print(f"My card ({hand}) is lower than the pile. I'll discard it before continuing.")
                 self.discard_timer = Timer(self.get_movement_time(), self.discard_lowest_card)
             return
 
@@ -244,9 +241,9 @@ class Model(CognitiveModel):
             # flag that a change in top card means a change in model success
             self.set_pending(actor)
             self.reset_timers()
-            lowest_card = self.get_lowest_card()
             # if the player just played
             if actor == Actor.player:
+                lowest_card = self.get_lowest_card()
                 # if the last play's success has not been processed properly but a mistake is made
                 if self.goal.slots["success"] is not None \
                         and lowest_card is not None and new_top_card > lowest_card:
@@ -316,7 +313,7 @@ class Model(CognitiveModel):
     async def set_success(self):
         self.check_goal()
         success = self.goal.slots["success"]
-        if success is not None and success == Success.pending:
+        if success is not None and success[0] == Success.pending:
             print("My card was played successfully.")
             self.goal.slots["success"] = (Success.success, Actor.model)
             self.time += 0.05
