@@ -346,15 +346,15 @@ class Model(CognitiveModel):
         # model played a card too early
         if success[0] == Success.early:
             # set new time as 15% later than the model played (and a life was lost)
-            new_time = time + (time * 0.20)
+            new_time = time + (time * 0.15)
             self.add_wait_fact(gap, new_time)
             print(f"I should have waited longer; I will try waiting {new_time} for gap {gap}.")
 
         # model played a card too late
         if success[0] == Success.late:
             # set new time as 15% earlier than that the player played (and a life was lost)
-            new_time = self.wait_time - (self.wait_time * 0.20)
-            new_time = temporal.time_to_pulses(new_time)
+            pulses = temporal.time_to_pulses(self.wait_time)
+            new_time = pulses - (pulses * 0.15)
             self.add_wait_fact(gap, new_time)
             print(f"I should have played sooner; I will try waiting {new_time} for gap {gap}.")
 
