@@ -375,12 +375,16 @@ class Model(CognitiveModel):
             # if the model still needs to wait a long time, it might propose a shuriken
             if time_diff >= long_time:
                 print("Should I propose a shuriken?")
-                proposed = await self.propose_shuriken()
-                if not proposed:
-                    print("I'll keep waiting.")
-                    self.check_in = Timer(long_time, self.check_time)
+                if self.shurikens_left <= 0:
+                    print("We have no shuriken...")
+                    print("I'll just keep waiting then.")
                 else:
-                    print("Waiting on shuriken response from player...")
+                    proposed = await self.propose_shuriken()
+                    if not proposed:
+                        print("I'll keep waiting.")
+                        self.check_in = Timer(long_time, self.check_time)
+                    else:
+                        print("Waiting on shuriken response from player...")
             else:
                 print("I'll play my card soon.")
 
