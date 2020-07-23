@@ -1,5 +1,6 @@
 # mind-server
 Client source code: https://github.com/ruurdbijlsma/mind-client
+
 Client live app: https://ruurd.dev/mind
 
 ## Requirements
