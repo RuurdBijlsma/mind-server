@@ -241,17 +241,6 @@ class Model(CognitiveModel):
             # flag that a change in top card means a change in model success
             self.set_pending(actor)
             self.reset_timers()
-            # if the player just played
-            if actor == Actor.player:
-                lowest_card = self.get_lowest_card()
-                # if the last play's success has not been processed properly but a mistake is made
-                if self.goal.slots["success"] is not None \
-                        and lowest_card is not None and new_top_card > lowest_card:
-                    # register the lost life
-                    self.life_lost(caused_by_human=False)
-                    # discard the lowest card
-                    if self.discard_timer is None:
-                        self.discard_timer = Timer(self.get_movement_time(), self.discard_lowest_card)
             self.deliberate()
 
     # function returns top card
