@@ -1,5 +1,4 @@
 .idea
 *.pyc
-data/learned_memory.csv
 
 __pycache__
